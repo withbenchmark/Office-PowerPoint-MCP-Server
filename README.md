@@ -2,6 +2,8 @@
 
 An MCP (Model Context Protocol) server for PowerPoint manipulation using python-pptx. This server provides tools for creating, editing, and manipulating PowerPoint presentations through the MCP protocol.
 
+![](https://badge.mcpx.dev?type=server 'MCP Server')
+
 ## Features
 
 - Round-trip any Open XML presentation (.pptx file) including all its elements
