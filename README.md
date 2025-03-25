@@ -8,11 +8,11 @@ A MCP (Model Context Protocol) server for PowerPoint manipulation using python-p
 
 #### Pormpt
 
-
+<img width="1280" alt="650f4cc5d0f1ea4f3b1580800cb0deb" src="https://github.com/user-attachments/assets/90633c97-f373-4c85-bc9c-a1d7b891c344" />
 
 #### Output
 
-
+<img width="1640" alt="084f1cf4bc7e4fcd4890c8f94f536c1" src="https://github.com/user-attachments/assets/420e63a0-15a4-46d8-b149-1408d23af038" />
 
 #### Demo's GIF -> (./public/demo.mp4)
 
