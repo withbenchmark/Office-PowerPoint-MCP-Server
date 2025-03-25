@@ -2,6 +2,22 @@
 
 An MCP (Model Context Protocol) server for PowerPoint manipulation using python-pptx. This server provides tools for creating, editing, and manipulating PowerPoint presentations through the MCP protocol.
 
+![](https://badge.mcpx.dev?type=server 'MCP Server')
+
+### Example
+
+#### Pormpt
+
+
+
+#### Output
+
+
+
+#### Demo's GIF -> (./public/demo.mp4)
+
+![demo](./public/demo.gif)
+
 ## Features
 
 - Round-trip any Open XML presentation (.pptx file) including all its elements
@@ -19,29 +35,49 @@ An MCP (Model Context Protocol) server for PowerPoint manipulation using python-
 ### Prerequisites
 
 - Python 3.6 or higher
-- python-pptx
-- mcp[cli] (MCP's Python SDK)
+- pip package manager
 
-### Setup
+### Installation Options
 
-1. Install the required packages:
+#### Option 1: Using the Setup Script (Recommended)
 
-```bash
-pip install python-pptx mcp[cli]
-```
-
-2. Clone or download this repository:
+The easiest way to set up the PowerPoint MCP Server is using the provided setup script, which automates the installation process:
 
 ```bash
-git clone https://github.com/GongRzhe/Office-PowerPoint-MCP-Server.git
-cd Office-PowerPoint-MCP-Server
+python setup_mcp.py
 ```
+
+This script will:
+- Check prerequisites
+- Offer installation options:
+  - Install from PyPI (recommended for most users)
+  - Set up local development environment
+- Install required dependencies
+- Generate the appropriate MCP configuration file
+- Provide instructions for integrating with Claude Desktop
+
+The script offers different paths based on your environment:
+- If you have `uvx` installed, it will configure using UVX (recommended)
+- If the server is already installed, it provides configuration options
+- If the server is not installed, it offers installation methods
+
+#### Option 2: Manual Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/GongRzhe/Office-PowerPoint-MCP-Server.git
+   cd Office-PowerPoint-MCP-Server
+   ```
+
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 3. Make the server executable:
-
-```bash
-chmod +x ppt_mcp_server.py
-```
+   ```bash
+   chmod +x ppt_mcp_server.py
+   ```
 
 ## Usage
 
@@ -55,6 +91,8 @@ python ppt_mcp_server.py
 
 ### MCP Configuration
 
+#### Option 1: Local Python Server
+
 Add the server to your MCP settings configuration file:
 
 ```json
@@ -63,6 +101,24 @@ Add the server to your MCP settings configuration file:
     "ppt": {
       "command": "python",
       "args": ["/path/to/ppt_mcp_server.py"],
+      "env": {}
+    }
+  }
+}
+```
+
+#### Option 2: Using UVX (No Local Installation Required)
+
+If you have `uvx` installed, you can run the server directly from PyPI without local installation:
+
+```json
+{
+  "mcpServers": {
+    "ppt": {
+      "command": "uvx",
+      "args": [
+        "--from", "office-powerpoint-mcp-server", "ppt_mcp_server"
+      ],
       "env": {}
     }
   }

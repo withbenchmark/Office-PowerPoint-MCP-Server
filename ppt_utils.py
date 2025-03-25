@@ -1,5 +1,33 @@
 """
 Utility functions for PowerPoint manipulation using python-pptx.
+
+This module provides a comprehensive set of functions to create and manipulate
+PowerPoint presentations programmatically. It wraps the python-pptx library
+with higher-level functions that simplify common operations.
+
+Key features:
+- Create, open, and save presentations
+- Add and format slides with various layouts
+- Manipulate text, including titles, placeholders, and textboxes
+- Add and format shapes, images, tables, and charts
+- Set document properties
+
+Usage examples:
+    # Create a new presentation
+    pres = create_presentation()
+    
+    # Add a title slide
+    slide, layout = add_slide(pres, 0)
+    set_title(slide, "Presentation Title")
+    
+    # Add a content slide with bullet points
+    slide, layout = add_slide(pres, 1)
+    set_title(slide, "Key Points")
+    placeholder = slide.placeholders[1]  # Content placeholder
+    add_bullet_points(placeholder, ["Point 1", "Point 2", "Point 3"])
+    
+    # Save the presentation
+    save_presentation(pres, "my_presentation.pptx")
 """
 from pptx import Presentation
 from pptx.chart.data import CategoryChartData, ChartData
@@ -13,6 +41,54 @@ from pptx.shapes.graphfrm import GraphicFrame
 import io
 from typing import Dict, List, Tuple, Union, Optional, Any
 import base64
+
+def try_multiple_approaches(operation_name, approaches):
+    """
+    Try multiple approaches to perform an operation, returning the first successful result.
+    
+    Args:
+        operation_name: Name of the operation for error reporting
+        approaches: List of (approach_func, description) tuples to try
+        
+    Returns:
+        Tuple of (result, None) if any approach succeeded, or (None, error_messages) if all failed
+    """
+    error_messages = []
+    
+    for approach_func, description in approaches:
+        try:
+            result = approach_func()
+            return result, None
+        except Exception as e:
+            error_messages.append(f"{description}: {str(e)}")
+    
+    return None, f"Failed to {operation_name} after trying multiple approaches: {'; '.join(error_messages)}"
+
+def safe_operation(operation_name, operation_func, error_message=None, *args, **kwargs):
+    """
+    Execute an operation safely with standard error handling.
+    
+    Args:
+        operation_name: Name of the operation for error reporting
+        operation_func: Function to execute
+        error_message: Custom error message (optional)
+        *args, **kwargs: Arguments to pass to the operation function
+        
+    Returns:
+        A tuple (result, error) where error is None if operation was successful
+    """
+    try:
+        result = operation_func(*args, **kwargs)
+        return result, None
+    except ValueError as e:
+        error_msg = error_message or f"Invalid input for {operation_name}: {str(e)}"
+        return None, error_msg
+    except TypeError as e:
+        error_msg = error_message or f"Type error in {operation_name}: {str(e)}"
+        return None, error_msg
+    except Exception as e:
+        error_msg = error_message or f"Failed to execute {operation_name}: {str(e)}"
+        return None, error_msg
 
 # ---- Presentation Functions ----
 
@@ -418,7 +494,7 @@ def add_shape(slide, shape_type: str, left: float, top: float, width: float, hei
     
     Args:
         slide: The slide object
-        shape_type: Shape type from MSO_SHAPE
+        shape_type: Shape type string (e.g., 'rectangle', 'oval', 'triangle')
         left: Left position in inches
         top: Top position in inches
         width: Width in inches
@@ -427,12 +503,18 @@ def add_shape(slide, shape_type: str, left: float, top: float, width: float, hei
     Returns:
         The created shape
     """
+    # Ensure shape_type is a string
+    shape_type_str = str(shape_type)
+    shape_type_lower = shape_type_str.lower()
+    
+    # Define shape type mapping with correct enum values
     shape_type_map = {
         'rectangle': MSO_SHAPE.RECTANGLE,
         'rounded_rectangle': MSO_SHAPE.ROUNDED_RECTANGLE,
         'oval': MSO_SHAPE.OVAL,
         'diamond': MSO_SHAPE.DIAMOND,
-        'triangle': MSO_SHAPE.TRIANGLE,
+        'triangle': MSO_SHAPE.ISOSCELES_TRIANGLE,  # Changed from TRIANGLE to ISOSCELES_TRIANGLE
+        'isosceles_triangle': MSO_SHAPE.ISOSCELES_TRIANGLE,
         'right_triangle': MSO_SHAPE.RIGHT_TRIANGLE,
         'pentagon': MSO_SHAPE.PENTAGON,
         'hexagon': MSO_SHAPE.HEXAGON,
@@ -456,12 +538,23 @@ def add_shape(slide, shape_type: str, left: float, top: float, width: float, hei
         'flowchart_connector': MSO_SHAPE.FLOWCHART_CONNECTOR
     }
     
-    shape_enum = shape_type_map.get(shape_type.lower(), MSO_SHAPE.RECTANGLE)
+    # Check if shape type is valid before trying to use it
+    if shape_type_lower not in shape_type_map:
+        available_shapes = ', '.join(sorted(shape_type_map.keys()))
+        raise ValueError(f"Unsupported shape type: '{shape_type}'. Available shape types: {available_shapes}")
     
-    shape = slide.shapes.add_shape(
-        shape_enum, Inches(left), Inches(top), Inches(width), Inches(height)
-    )
-    return shape
+    # Get the shape enum value
+    shape_enum = shape_type_map[shape_type_lower]
+    
+    # Create the shape with better error handling
+    try:
+        shape = slide.shapes.add_shape(
+            shape_enum, Inches(left), Inches(top), Inches(width), Inches(height)
+        )
+        return shape
+    except Exception as e:
+        # More detailed error for debugging
+        raise ValueError(f"Could not create shape '{shape_type}' (enum: {shape_enum.__class__.__name__}.{shape_enum.name}): {str(e)}")
 
 def format_shape(shape, fill_color: Tuple[int, int, int] = None, 
                 line_color: Tuple[int, int, int] = None, line_width: float = None) -> None:
