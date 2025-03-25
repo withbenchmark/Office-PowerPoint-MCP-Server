@@ -4,8 +4,6 @@ A MCP (Model Context Protocol) server for PowerPoint manipulation using python-p
 
 ![](https://badge.mcpx.dev?type=server 'MCP Server')
 
-![](https://badge.mcpx.dev?type=server 'MCP Server')
-
 ### Example
 
 #### Pormpt
