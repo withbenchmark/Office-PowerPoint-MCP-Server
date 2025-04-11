@@ -34,7 +34,7 @@ A MCP (Model Context Protocol) server for PowerPoint manipulation using python-p
 
 ### Prerequisites
 
-- Python 3.6 or higher
+- Python 3.10 or higher
 - pip package manager
 
 ### Installation Options
