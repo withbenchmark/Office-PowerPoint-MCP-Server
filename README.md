@@ -1,8 +1,8 @@
 # Office-PowerPoint-MCP-Server
+[![smithery badge](https://smithery.ai/badge/@GongRzhe/Office-PowerPoint-MCP-Server)](https://smithery.ai/server/@GongRzhe/Office-PowerPoint-MCP-Server)
+![](https://badge.mcpx.dev?type=server 'MCP Server')
 
 A MCP (Model Context Protocol) server for PowerPoint manipulation using python-pptx. This server provides tools for creating, editing, and manipulating PowerPoint presentations through the MCP protocol.
-
-![](https://badge.mcpx.dev?type=server 'MCP Server')
 
 ### Example
 
@@ -31,6 +31,14 @@ A MCP (Model Context Protocol) server for PowerPoint manipulation using python-p
 - Access and change core document properties such as title and subject
 
 ## Installation
+
+### Installing via Smithery
+
+To install PowerPoint Manipulation Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@GongRzhe/Office-PowerPoint-MCP-Server):
+
+```bash
+npx -y @smithery/cli install @GongRzhe/Office-PowerPoint-MCP-Server --client claude
+```
 
 ### Prerequisites
 
