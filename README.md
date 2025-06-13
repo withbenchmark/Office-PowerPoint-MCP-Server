@@ -91,10 +91,21 @@ The script offers different paths based on your environment:
 
 ### Starting the Server
 
-Run the server:
+Run the stdio server:
 
 ```bash
 python ppt_mcp_server.py
+```
+
+Run the streamable-http server on port 8000:
+
+```bash
+python ppt_mcp_server.py --transport http --port 8000
+```
+
+Display help text:
+```bash
+python ppt_mcp_server.py -h
 ```
 
 ### MCP Configuration
