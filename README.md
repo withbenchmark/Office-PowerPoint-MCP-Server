@@ -89,7 +89,12 @@ The script offers different paths based on your environment:
 
 ## Usage
 
-### Starting the Server
+Display help text:
+```bash
+python ppt_mcp_server.py -h
+```
+
+### Starting the Stdio Server
 
 Run the stdio server:
 
@@ -97,16 +102,20 @@ Run the stdio server:
 python ppt_mcp_server.py
 ```
 
+### Starting the Streamable-Http Server
+
 Run the streamable-http server on port 8000:
 
 ```bash
 python ppt_mcp_server.py --transport http --port 8000
 ```
 
-Display help text:
+Run in Docker
 ```bash
-python ppt_mcp_server.py -h
+docker build -t ppt_mcp_server .
+docker run -d --rm -p 8000:8000 ppt_mcp_server -t http
 ```
+
 
 ### MCP Configuration
 
