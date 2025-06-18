@@ -14,7 +14,8 @@ import ppt_utils
 app = FastMCP(
     name="ppt-mcp-server",
     description="MCP Server for PowerPoint manipulation using python-pptx",
-    version="1.0.0"
+    version="1.0.0", 
+    log_level="INFO"
 )
 
 # Global state to store presentations in memory
