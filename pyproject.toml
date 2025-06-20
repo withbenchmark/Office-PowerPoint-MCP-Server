@@ -35,7 +35,8 @@ sources = ["."]
 [tool.hatch.build]
 exclude = [
   "public/demo.mp4",
-  "public/demo.gif"
+  "public/demo.gif",
+  "*.pptx"
 ]
 
 [project.scripts]
