@@ -158,9 +158,11 @@ If you have `uvx` installed, you can run the server directly from PyPI without l
 ### Presentation Tools
 
 - **create_presentation**: Create a new PowerPoint presentation
+- **create_presentation_from_template**: Create a new PowerPoint presentation from a template file
 - **open_presentation**: Open an existing PowerPoint presentation from a file
 - **save_presentation**: Save the current presentation to a file
 - **get_presentation_info**: Get information about the current presentation
+- **get_template_info**: Get information about a template file including layouts and properties
 - **set_core_properties**: Set core document properties of the current presentation
 
 ### Slide Tools
@@ -240,6 +242,51 @@ result = use_mcp_tool(
 )
 ```
 
+### Creating a Presentation from Template
+
+```python
+# First, inspect a template to see its layouts and properties
+result = use_mcp_tool(
+    server_name="ppt",
+    tool_name="get_template_info",
+    arguments={
+        "template_path": "company_template.pptx"
+    }
+)
+template_info = result
+
+# Create a new presentation from the template
+result = use_mcp_tool(
+    server_name="ppt",
+    tool_name="create_presentation_from_template",
+    arguments={
+        "template_path": "company_template.pptx"
+    }
+)
+presentation_id = result["presentation_id"]
+
+# Add a slide using one of the template's layouts
+result = use_mcp_tool(
+    server_name="ppt",
+    tool_name="add_slide",
+    arguments={
+        "layout_index": 1,  # Use layout from template
+        "title": "Quarterly Report",
+        "presentation_id": presentation_id
+    }
+)
+
+# Save the presentation
+result = use_mcp_tool(
+    server_name="ppt",
+    tool_name="save_presentation",
+    arguments={
+        "file_path": "quarterly_report.pptx",
+        "presentation_id": presentation_id
+    }
+)
+```
+
 ### Adding a Chart
 
 ```python
@@ -280,6 +327,31 @@ result = use_mcp_tool(
     }
 )
 ```
+
+## Template Support
+
+### Working with Templates
+
+The PowerPoint MCP Server supports creating presentations from existing template files. This feature allows you to:
+
+- Use corporate templates with predefined themes, layouts, and styles
+- Maintain consistent branding across presentations
+- Leverage existing slide masters and custom layouts
+- Start with pre-configured document properties
+
+### Template File Requirements
+
+- Template files must be in `.pptx` or `.potx` format
+- Templates can contain existing slides (they will be preserved)
+- All custom layouts and slide masters from the template are available
+- Template files are searched in common directories: current directory, `./templates`, `./assets`, `./resources`
+
+### Template Workflow
+
+1. **Inspect Template**: Use `get_template_info` to understand available layouts and properties
+2. **Create from Template**: Use `create_presentation_from_template` to create a new presentation
+3. **Use Template Layouts**: Reference layout indices from the template info when adding slides
+4. **Preserve Branding**: Template themes, fonts, and colors are automatically applied
 
 ## License
 

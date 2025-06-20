@@ -145,6 +145,9 @@ def generate_mcp_config_local(python_path):
     # Path to PowerPoint Server script
     server_script_path = os.path.join(base_path, 'ppt_mcp_server.py')
     
+    # Path to templates directory
+    templates_path = os.path.join(base_path, 'templates')
+    
     # Create MCP configuration dictionary
     config = {
         "mcpServers": {
@@ -152,7 +155,8 @@ def generate_mcp_config_local(python_path):
                 "command": python_path,
                 "args": [server_script_path],
                 "env": {
-                    "PYTHONPATH": base_path
+                    "PYTHONPATH": base_path,
+                    "PPT_TEMPLATE_PATH": templates_path
                 }
             }
         }
@@ -174,13 +178,20 @@ def generate_mcp_config_uvx():
     # Get absolute path of the directory containing the current script
     base_path = os.path.abspath(os.path.dirname(__file__))
     
+    # Path to templates directory (optional for UVX installs)
+    templates_path = os.path.join(base_path, 'templates')
+    
     # Create MCP configuration dictionary
+    env_config = {}
+    if os.path.exists(templates_path):
+        env_config["PPT_TEMPLATE_PATH"] = templates_path
+    
     config = {
         "mcpServers": {
             "ppt": {
                 "command": "uvx",
                 "args": ["--from", "office-powerpoint-mcp-server", "ppt_mcp_server"],
-                "env": {}
+                "env": env_config
             }
         }
     }
@@ -201,13 +212,20 @@ def generate_mcp_config_module():
     # Get absolute path of the directory containing the current script
     base_path = os.path.abspath(os.path.dirname(__file__))
     
+    # Path to templates directory (optional for module installs)
+    templates_path = os.path.join(base_path, 'templates')
+    
     # Create MCP configuration dictionary
+    env_config = {}
+    if os.path.exists(templates_path):
+        env_config["PPT_TEMPLATE_PATH"] = templates_path
+    
     config = {
         "mcpServers": {
             "ppt": {
                 "command": sys.executable,
                 "args": ["-m", "office_powerpoint_mcp_server"],
-                "env": {}
+                "env": env_config
             }
         }
     }
@@ -259,7 +277,7 @@ def print_config_instructions(config_path):
 
 def create_package_structure():
     """
-    Create necessary package structure
+    Create necessary package structure and directories
     """
     # Get absolute path of the directory containing the current script
     base_path = os.path.abspath(os.path.dirname(__file__))
@@ -277,6 +295,140 @@ def create_package_structure():
         with open(requirements_path, 'w') as f:
             f.write('mcp[cli]\npython-pptx\n')
         print(f"Created requirements.txt at: {requirements_path}")
+    
+    # Create templates directory for PowerPoint templates
+    templates_dir = os.path.join(base_path, 'templates')
+    if not os.path.exists(templates_dir):
+        os.makedirs(templates_dir)
+        print(f"Created templates directory at: {templates_dir}")
+        
+        # Create a README file in templates directory
+        readme_path = os.path.join(templates_dir, 'README.md')
+        with open(readme_path, 'w') as f:
+            f.write("""# PowerPoint Templates
+
+This directory is for storing PowerPoint template files (.pptx or .potx) that can be used with the MCP server.
+
+## Usage
+
+1. Place your template files in this directory
+2. Use the `create_presentation_from_template` tool with the template filename
+3. The server will automatically search for templates in this directory
+
+## Supported Formats
+
+- `.pptx` - PowerPoint presentation files
+- `.potx` - PowerPoint template files
+
+## Example
+
+```python
+# Create presentation from template
+result = create_presentation_from_template("company_template.pptx")
+```
+
+The server will search for templates in:
+- Current directory
+- ./templates/ (this directory)
+- ./assets/
+- ./resources/
+""")
+        print(f"Created templates README at: {readme_path}")
+        
+        # Offer to create a sample template
+        create_sample = input("\nWould you like to create a sample template for testing? (y/n): ").lower().strip()
+        if create_sample in ['y', 'yes']:
+            create_sample_template(templates_dir)
+
+def create_sample_template(templates_dir):
+    """
+    Create a sample PowerPoint template for testing
+    
+    Parameters:
+    - templates_dir: Directory where templates are stored
+    """
+    try:
+        # Import required modules for creating a sample template
+        from pptx import Presentation
+        from pptx.util import Inches, Pt
+        from pptx.dml.color import RGBColor
+        from pptx.enum.text import PP_ALIGN
+        
+        print("Creating sample template...")
+        
+        # Create a new presentation
+        prs = Presentation()
+        
+        # Get the title slide layout
+        title_slide_layout = prs.slide_layouts[0]
+        slide = prs.slides.add_slide(title_slide_layout)
+        
+        # Set title and subtitle
+        title = slide.shapes.title
+        subtitle = slide.placeholders[1]
+        
+        title.text = "Sample Company Template"
+        subtitle.text = "Professional Presentation Template\nCreated by PowerPoint MCP Server"
+        
+        # Format title
+        title_paragraph = title.text_frame.paragraphs[0]
+        title_paragraph.font.size = Pt(44)
+        title_paragraph.font.bold = True
+        title_paragraph.font.color.rgb = RGBColor(31, 73, 125)  # Dark blue
+        
+        # Format subtitle
+        for paragraph in subtitle.text_frame.paragraphs:
+            paragraph.font.size = Pt(18)
+            paragraph.font.color.rgb = RGBColor(68, 84, 106)  # Gray blue
+            paragraph.alignment = PP_ALIGN.CENTER
+        
+        # Add a content slide
+        content_slide_layout = prs.slide_layouts[1]
+        content_slide = prs.slides.add_slide(content_slide_layout)
+        
+        content_title = content_slide.shapes.title
+        content_title.text = "Sample Content Slide"
+        
+        # Add bullet points to content
+        content_placeholder = content_slide.placeholders[1]
+        text_frame = content_placeholder.text_frame
+        text_frame.text = "Key Features"
+        
+        # Add bullet points
+        bullet_points = [
+            "Professional theme and colors",
+            "Custom layouts and placeholders", 
+            "Ready for content creation",
+            "Compatible with MCP server tools"
+        ]
+        
+        for point in bullet_points:
+            p = text_frame.add_paragraph()
+            p.text = point
+            p.level = 1
+        
+        # Add a section header slide
+        section_slide_layout = prs.slide_layouts[2] if len(prs.slide_layouts) > 2 else prs.slide_layouts[0]
+        section_slide = prs.slides.add_slide(section_slide_layout)
+        
+        if section_slide.shapes.title:
+            section_slide.shapes.title.text = "Template Features"
+        
+        # Save the sample template
+        template_path = os.path.join(templates_dir, 'sample_template.pptx')
+        prs.save(template_path)
+        
+        print(f"✅ Sample template created: {template_path}")
+        print("   You can now test the template feature with:")
+        print("   • get_template_info('sample_template.pptx')")
+        print("   • create_presentation_from_template('sample_template.pptx')")
+        
+    except ImportError:
+        print("⚠️  Cannot create sample template: python-pptx not installed yet")
+        print("   Run the setup first, then manually create templates in the templates/ directory")
+    except Exception as e:
+        print(f"❌ Failed to create sample template: {str(e)}")
+        print("   You can manually add template files to the templates/ directory")
 
 # Main execution entry point
 if __name__ == '__main__':
@@ -364,3 +516,46 @@ if __name__ == '__main__':
             sys.exit(1)
     
     print("\nSetup complete! You can now use the PowerPoint MCP server with compatible clients like Claude Desktop.")
+    
+    print("\n" + "="*60)
+    print("POWERPOINT MCP SERVER - NEW FEATURES")
+    print("="*60)
+    print("\n📁 Template Support:")
+    print("   • Place PowerPoint templates (.pptx/.potx) in the ./templates/ directory")
+    print("   • Use 'create_presentation_from_template' tool to create presentations from templates")
+    print("   • Use 'get_template_info' tool to inspect template layouts and properties")
+    print("   • Templates preserve branding, themes, and custom layouts")
+    print("   • Template path configured via PPT_TEMPLATE_PATH environment variable")
+    
+    print("\n🔧 Available MCP Tools:")
+    print("   Presentations:")
+    print("   • create_presentation - Create new blank presentation")
+    print("   • create_presentation_from_template - Create from template file")
+    print("   • get_template_info - Inspect template file details")
+    print("   • open_presentation - Open existing presentation")
+    print("   • save_presentation - Save presentation to file")
+    
+    print("\n   Content:")
+    print("   • add_slide - Add slides with various layouts")
+    print("   • add_textbox - Add formatted text boxes")
+    print("   • add_image - Add images from files or base64")
+    print("   • add_table - Add formatted tables")
+    print("   • add_shape - Add various auto shapes")
+    print("   • add_chart - Add column, bar, line, and pie charts")
+    
+    print("\n📚 Documentation:")
+    print("   • Full API documentation available in README.md")
+    print("   • Template usage examples included")
+    print("   • Check ./templates/README.md for template guidelines")
+    
+    print("\n🚀 Quick Start with Templates:")
+    print("   1. Copy your .pptx template to ./templates/")
+    print("   2. Use: create_presentation_from_template('your_template.pptx')")
+    print("   3. Add slides using template layouts")
+    print("   4. Save your presentation")
+    print("\n💡 Custom Template Paths:")
+    print("   • Set PPT_TEMPLATE_PATH environment variable for custom locations")
+    print("   • Supports multiple paths (colon-separated on Unix, semicolon on Windows)")
+    print("   • Example: PPT_TEMPLATE_PATH='/path/to/templates:/path/to/more/templates'")
+    
+    print("\n" + "="*60)

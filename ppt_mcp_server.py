@@ -23,6 +23,40 @@ app = FastMCP(
 presentations = {}
 current_presentation_id = None
 
+# Template configuration
+def get_template_search_directories():
+    """
+    Get list of directories to search for templates.
+    Uses environment variable PPT_TEMPLATE_PATH if set, otherwise uses default directories.
+    
+    Returns:
+        List of directories to search for templates
+    """
+    template_env_path = os.environ.get('PPT_TEMPLATE_PATH')
+    
+    if template_env_path:
+        # If environment variable is set, use it as the primary template directory
+        # Support multiple paths separated by colon (Unix) or semicolon (Windows)
+        import platform
+        separator = ';' if platform.system() == "Windows" else ':'
+        env_dirs = [path.strip() for path in template_env_path.split(separator) if path.strip()]
+        
+        # Verify that the directories exist
+        valid_env_dirs = []
+        for dir_path in env_dirs:
+            expanded_path = os.path.expanduser(dir_path)
+            if os.path.exists(expanded_path) and os.path.isdir(expanded_path):
+                valid_env_dirs.append(expanded_path)
+        
+        if valid_env_dirs:
+            # Add default fallback directories
+            return valid_env_dirs + ['.', './templates', './assets', './resources']
+        else:
+            print(f"Warning: PPT_TEMPLATE_PATH directories not found: {template_env_path}")
+    
+    # Default search directories when no environment variable or invalid paths
+    return ['.', './templates', './assets', './resources']
+
 # ---- Helper Functions ----
 
 def get_current_presentation():
@@ -161,6 +195,52 @@ def create_presentation(id: Optional[str] = None) -> Dict:
     }
 
 @app.tool()
+def create_presentation_from_template(template_path: str, id: Optional[str] = None) -> Dict:
+    """Create a new PowerPoint presentation from a template file."""
+    global current_presentation_id
+    
+    # Check if template file exists
+    if not os.path.exists(template_path):
+        # Try to find the template by searching in configured directories
+        search_dirs = get_template_search_directories()
+        template_name = os.path.basename(template_path)
+        
+        for directory in search_dirs:
+            potential_path = os.path.join(directory, template_name)
+            if os.path.exists(potential_path):
+                template_path = potential_path
+                break
+        else:
+            env_path_info = f" (PPT_TEMPLATE_PATH: {os.environ.get('PPT_TEMPLATE_PATH', 'not set')})" if os.environ.get('PPT_TEMPLATE_PATH') else ""
+            return {
+                "error": f"Template file not found: {template_path}. Searched in {', '.join(search_dirs)}{env_path_info}"
+            }
+    
+    # Create presentation from template
+    try:
+        pres = ppt_utils.create_presentation_from_template(template_path)
+    except Exception as e:
+        return {
+            "error": f"Failed to create presentation from template: {str(e)}"
+        }
+    
+    # Generate an ID if not provided
+    if id is None:
+        id = f"presentation_{len(presentations) + 1}"
+    
+    # Store the presentation
+    presentations[id] = pres
+    current_presentation_id = id
+    
+    return {
+        "presentation_id": id,
+        "message": f"Created new presentation from template '{template_path}' with ID: {id}",
+        "template_path": template_path,
+        "slide_count": len(pres.slides),
+        "layout_count": len(pres.slide_layouts)
+    }
+
+@app.tool()
 def open_presentation(file_path: str, id: Optional[str] = None) -> Dict:
     """Open an existing PowerPoint presentation from a file."""
     global current_presentation_id
@@ -279,6 +359,35 @@ def set_core_properties(
     except Exception as e:
         return {
             "error": f"Failed to set core properties: {str(e)}"
+        }
+
+@app.tool() 
+def get_template_info(template_path: str) -> Dict:
+    """Get information about a template file including layouts and properties."""
+    # Check if template file exists
+    if not os.path.exists(template_path):
+        # Try to find the template by searching in configured directories
+        search_dirs = get_template_search_directories()
+        template_name = os.path.basename(template_path)
+        
+        for directory in search_dirs:
+            potential_path = os.path.join(directory, template_name)
+            if os.path.exists(potential_path):
+                template_path = potential_path
+                break
+        else:
+            env_path_info = f" (PPT_TEMPLATE_PATH: {os.environ.get('PPT_TEMPLATE_PATH', 'not set')})" if os.environ.get('PPT_TEMPLATE_PATH') else ""
+            return {
+                "error": f"Template file not found: {template_path}. Searched in {', '.join(search_dirs)}{env_path_info}"
+            }
+    
+    # Get template information
+    try:
+        template_info = ppt_utils.get_template_info(template_path)
+        return template_info
+    except Exception as e:
+        return {
+            "error": f"Failed to read template info: {str(e)}"
         }
 
 # ---- Slide Tools ----
@@ -1161,6 +1270,617 @@ def add_chart(
         return {
             "error": f"Failed to add chart: {str(e)}"
         }
+
+@app.tool()
+def format_text_advanced(
+    presentation_id: str = None,
+    slide_index: int = 0,
+    shape_index: int = 0,
+    font_size: int = None,
+    font_name: str = None,
+    bold: bool = None,
+    italic: bool = None,
+    color: List[int] = None,
+    alignment: str = None,
+    auto_resize: bool = True,
+    min_font_size: int = 8,
+    max_font_size: int = None
+) -> Dict[str, Any]:
+    """
+    Apply advanced text formatting with automatic overflow handling and font size adjustment.
+    
+    This tool provides enhanced text formatting capabilities including:
+    - Automatic font size adjustment when text overflows
+    - Text wrapping and container optimization
+    - Robust error handling for font modification issues
+    
+    Args:
+        presentation_id: ID of the presentation (uses current if not specified)
+        slide_index: Index of the slide (0-based)
+        shape_index: Index of the shape containing text (0-based)
+        font_size: Font size in points
+        font_name: Font name (e.g., 'Arial', 'Times New Roman')
+        bold: Whether text should be bold
+        italic: Whether text should be italic
+        color: RGB color as [r, g, b] list (0-255 range)
+        alignment: Text alignment ('left', 'center', 'right', 'justify')
+        auto_resize: Whether to automatically reduce font size if text overflows
+        min_font_size: Minimum font size when auto-resizing (default: 8)
+        max_font_size: Maximum font size when auto-resizing (default: original font_size)
+    
+    Returns:
+        Dictionary with formatting results including final font size and warnings
+    
+    Examples:
+        Format text with auto-resize enabled:
+            format_text_advanced(slide_index=0, shape_index=0, font_size=24, auto_resize=True)
+            
+        Apply bold formatting with specific color:
+            format_text_advanced(slide_index=0, shape_index=0, bold=True, color=[255, 0, 0])
+    """
+    try:
+        # Get the presentation
+        if presentation_id:
+            if presentation_id not in presentations:
+                return {"error": f"Presentation '{presentation_id}' not found"}
+            pres = presentations[presentation_id]
+        else:
+            pres = get_current_presentation()
+        
+        # Validate slide index
+        if slide_index < 0 or slide_index >= len(pres.slides):
+            return {"error": f"Invalid slide index: {slide_index}. Presentation has {len(pres.slides)} slides"}
+        
+        slide = pres.slides[slide_index]
+        
+        # Validate shape index
+        if shape_index < 0 or shape_index >= len(slide.shapes):
+            return {"error": f"Invalid shape index: {shape_index}. Slide has {len(slide.shapes)} shapes"}
+        
+        shape = slide.shapes[shape_index]
+        
+        # Check if shape has text
+        if not hasattr(shape, 'text_frame'):
+            return {"error": f"Shape at index {shape_index} does not contain text"}
+        
+        # Apply advanced text formatting
+        result = ppt_utils.format_text_advanced(
+            shape.text_frame,
+            font_size=font_size,
+            font_name=font_name,
+            bold=bold,
+            italic=italic,
+            color=tuple(color) if color else None,
+            alignment=alignment,
+            auto_resize=auto_resize,
+            min_font_size=min_font_size,
+            max_font_size=max_font_size
+        )
+        
+        if result['success']:
+            message = f"Applied advanced formatting to shape {shape_index} on slide {slide_index}"
+            if result['auto_resized']:
+                message += f" (font size adjusted from {result['original_font_size']} to {result['final_font_size']})"
+            
+            return {
+                "message": message,
+                "formatting_result": result
+            }
+        else:
+            return {"error": f"Failed to format text: {result.get('error', 'Unknown error')}"}
+            
+    except Exception as e:
+        return {"error": f"Failed to format text: {str(e)}"}
+
+@app.tool()
+def validate_text_fit(
+    presentation_id: str = None,
+    slide_index: int = 0,
+    shape_index: int = 0,
+    text_content: str = None,
+    font_size: int = 12
+) -> Dict[str, Any]:
+    """
+    Validate whether text content will fit in a shape container and get optimization suggestions.
+    
+    This tool helps prevent text overflow issues by:
+    - Estimating if text will fit in the current container
+    - Suggesting optimal font sizes
+    - Recommending container dimension adjustments
+    
+    Args:
+        presentation_id: ID of the presentation (uses current if not specified)
+        slide_index: Index of the slide (0-based)
+        shape_index: Index of the shape containing text (0-based)
+        text_content: Text content to validate (uses current text if not specified)
+        font_size: Font size to test (in points)
+    
+    Returns:
+        Dictionary with validation results and optimization suggestions
+    
+    Examples:
+        Check if current text fits:
+            validate_text_fit(slide_index=0, shape_index=0)
+            
+        Test specific text with font size:
+            validate_text_fit(slide_index=0, shape_index=0, text_content="Long text here", font_size=16)
+    """
+    try:
+        # Get the presentation
+        if presentation_id:
+            if presentation_id not in presentations:
+                return {"error": f"Presentation '{presentation_id}' not found"}
+            pres = presentations[presentation_id]
+        else:
+            pres = get_current_presentation()
+        
+        # Validate slide index
+        if slide_index < 0 or slide_index >= len(pres.slides):
+            return {"error": f"Invalid slide index: {slide_index}. Presentation has {len(pres.slides)} slides"}
+        
+        slide = pres.slides[slide_index]
+        
+        # Validate shape index
+        if shape_index < 0 or shape_index >= len(slide.shapes):
+            return {"error": f"Invalid shape index: {shape_index}. Slide has {len(slide.shapes)} shapes"}
+        
+        shape = slide.shapes[shape_index]
+        
+        # Check if shape has text
+        if not hasattr(shape, 'text_frame'):
+            return {"error": f"Shape at index {shape_index} does not contain text"}
+        
+        # Use current text if none specified
+        if text_content is None:
+            text_content = shape.text_frame.text
+        
+        # Validate text container
+        validation_result = ppt_utils.validate_text_container(shape, text_content, font_size)
+        
+        return {
+            "message": f"Validated text fit for shape {shape_index} on slide {slide_index}",
+            "validation_result": validation_result,
+            "text_length": len(text_content),
+            "tested_font_size": font_size
+        }
+        
+    except Exception as e:
+        return {"error": f"Failed to validate text fit: {str(e)}"}
+
+@app.tool()
+def add_textbox_advanced(
+    presentation_id: str = None,
+    slide_index: int = 0,
+    left: float = 1.0,
+    top: float = 1.0,
+    width: float = 4.0,
+    height: float = 2.0,
+    text: str = "Sample text",
+    font_size: int = 12,
+    font_name: str = None,
+    bold: bool = None,
+    italic: bool = None,
+    color: List[int] = None,
+    alignment: str = "left",
+    auto_resize: bool = True
+) -> Dict[str, Any]:
+    """
+    Add a textbox with advanced formatting and automatic overflow handling.
+    
+    This enhanced textbox creation tool provides:
+    - Automatic font size adjustment to prevent overflow
+    - Built-in text formatting options
+    - Intelligent container sizing
+    
+    Args:
+        presentation_id: ID of the presentation (uses current if not specified)
+        slide_index: Index of the slide (0-based)
+        left: Left position in inches
+        top: Top position in inches  
+        width: Width in inches
+        height: Height in inches
+        text: Text content for the textbox
+        font_size: Font size in points
+        font_name: Font name (e.g., 'Arial', 'Times New Roman')
+        bold: Whether text should be bold
+        italic: Whether text should be italic
+        color: RGB color as [r, g, b] list (0-255 range)
+        alignment: Text alignment ('left', 'center', 'right', 'justify')
+        auto_resize: Whether to automatically resize font if text overflows
+    
+    Returns:
+        Dictionary with creation results and shape information
+    
+    Examples:
+        Add a simple textbox with auto-resize:
+            add_textbox_advanced(slide_index=0, text="Hello World", font_size=16, auto_resize=True)
+            
+        Add a formatted textbox with custom styling:
+            add_textbox_advanced(slide_index=0, text="Important Note", font_size=14, bold=True, color=[255, 0, 0])
+    """
+    try:
+        # Get the presentation
+        if presentation_id:
+            if presentation_id not in presentations:
+                return {"error": f"Presentation '{presentation_id}' not found"}
+            pres = presentations[presentation_id]
+        else:
+            pres = get_current_presentation()
+        
+        # Validate slide index
+        if slide_index < 0 or slide_index >= len(pres.slides):
+            return {"error": f"Invalid slide index: {slide_index}. Presentation has {len(pres.slides)} slides"}
+        
+        slide = pres.slides[slide_index]
+        
+        # Validate parameters
+        params = {
+            'left': (left, [(is_non_negative, "must be non-negative")]),
+            'top': (top, [(is_non_negative, "must be non-negative")]),
+            'width': (width, [(is_positive, "must be positive")]),
+            'height': (height, [(is_positive, "must be positive")]),
+            'font_size': (font_size, [(is_positive, "must be positive")])
+        }
+        
+        if color:
+            params['color'] = (color, [(is_valid_rgb, "must be [r, g, b] with values 0-255")])
+        
+        valid, error_msg = validate_parameters(params)
+        if not valid:
+            return {"error": error_msg}
+        
+        # Add textbox with advanced formatting
+        textbox = ppt_utils.add_textbox(
+            slide, left, top, width, height, text,
+            font_size=font_size,
+            font_name=font_name,
+            bold=bold,
+            italic=italic,
+            color=tuple(color) if color else None,
+            alignment=alignment,
+            auto_resize=auto_resize
+        )
+        
+        return {
+            "message": f"Added advanced textbox to slide {slide_index}",
+            "shape_index": len(slide.shapes) - 1,
+            "dimensions": {
+                "left": left,
+                "top": top,
+                "width": width,
+                "height": height
+            },
+            "formatting": {
+                "font_size": font_size,
+                "font_name": font_name,
+                "bold": bold,
+                "italic": italic,
+                "color": color,
+                "alignment": alignment,
+                "auto_resize": auto_resize
+            }
+        }
+        
+    except Exception as e:
+        return {"error": f"Failed to add advanced textbox: {str(e)}"}
+
+@app.tool()
+def add_professional_slide(
+    presentation_id: str = None,
+    slide_type: str = 'title_content',
+    color_scheme: str = 'modern_blue',
+    title: str = None,
+    content: List[str] = None
+) -> Dict[str, Any]:
+    """
+    Add a professionally designed slide with modern styling and proper layout.
+    
+    This tool creates slides with:
+    - Professional color schemes and typography
+    - Proper spacing and margins
+    - Modern flat design principles
+    - Consistent visual hierarchy
+    
+    Args:
+        presentation_id: ID of the presentation (uses current if not specified)
+        slide_type: Type of slide ('title', 'title_content', 'content', 'two_column', 'blank')
+        color_scheme: Color scheme ('modern_blue', 'corporate_gray', 'elegant_green', 'warm_red')
+        title: Optional title text to add immediately
+        content: Optional list of bullet points or content to add
+    
+    Returns:
+        Dictionary with slide creation results and design information
+    
+    Examples:
+        Create a professional title slide:
+            add_professional_slide(slide_type='title', title='Quarterly Results', color_scheme='corporate_gray')
+            
+        Create a content slide with bullet points:
+            add_professional_slide(slide_type='title_content', title='Key Points', 
+                                  content=['Point 1', 'Point 2'], color_scheme='modern_blue')
+    """
+    try:
+        # Get the presentation
+        if presentation_id:
+            if presentation_id not in presentations:
+                return {"error": f"Presentation '{presentation_id}' not found"}
+            pres = presentations[presentation_id]
+        else:
+            pres = get_current_presentation()
+        
+        # Add professional slide
+        slide, layout, design_info = ppt_utils.add_professional_slide(
+            pres, slide_type, color_scheme
+        )
+        
+        # Add title if provided
+        if title:
+            ppt_utils.set_professional_title(slide, title, color_scheme)
+        
+        # Add content if provided
+        if content and slide_type in ['title_content', 'content']:
+            try:
+                # Find content placeholder (usually index 1)
+                content_placeholder = None
+                for i, placeholder in enumerate(slide.placeholders):
+                    if i == 1:  # Content placeholder
+                        content_placeholder = placeholder
+                        break
+                
+                if content_placeholder:
+                    ppt_utils.add_professional_bullet_points(
+                        content_placeholder, content, color_scheme, hierarchical=True
+                    )
+            except Exception as e:
+                design_info['content_warning'] = f"Could not add content: {str(e)}"
+        
+        return {
+            "message": f"Added professional {slide_type} slide",
+            "slide_index": len(pres.slides) - 1,
+            "design_info": design_info
+        }
+        
+    except Exception as e:
+        return {"error": f"Failed to add professional slide: {str(e)}"}
+
+@app.tool()
+def apply_professional_theme(
+    presentation_id: str = None,
+    color_scheme: str = 'modern_blue',
+    apply_to_existing: bool = True
+) -> Dict[str, Any]:
+    """
+    Apply a professional theme and color scheme to the presentation.
+    
+    This tool enhances presentation quality by:
+    - Applying consistent professional color schemes
+    - Setting up proper typography standards
+    - Configuring modern design principles
+    - Optionally updating existing slides
+    
+    Args:
+        presentation_id: ID of the presentation (uses current if not specified)
+        color_scheme: Color scheme to apply ('modern_blue', 'corporate_gray', 'elegant_green', 'warm_red')
+        apply_to_existing: Whether to update formatting of existing slides
+    
+    Returns:
+        Dictionary with theming results and applied settings
+    
+    Examples:
+        Apply modern blue theme:
+            apply_professional_theme(color_scheme='modern_blue')
+            
+        Apply corporate theme without changing existing slides:
+            apply_professional_theme(color_scheme='corporate_gray', apply_to_existing=False)
+    """
+    try:
+        # Get the presentation
+        if presentation_id:
+            if presentation_id not in presentations:
+                return {"error": f"Presentation '{presentation_id}' not found"}
+            pres = presentations[presentation_id]
+        else:
+            pres = get_current_presentation()
+        
+        # Get color scheme info
+        if color_scheme not in ppt_utils.PROFESSIONAL_COLOR_SCHEMES:
+            return {"error": f"Unknown color scheme: {color_scheme}. Available: {list(ppt_utils.PROFESSIONAL_COLOR_SCHEMES.keys())}"}
+        
+        scheme_colors = ppt_utils.PROFESSIONAL_COLOR_SCHEMES[color_scheme]
+        updated_slides = 0
+        warnings = []
+        
+        # Apply theme to existing slides if requested
+        if apply_to_existing:
+            for i, slide in enumerate(pres.slides):
+                try:
+                    # Apply background
+                    ppt_utils.apply_professional_slide_background(slide, color_scheme)
+                    
+                    # Update title formatting if present
+                    if slide.shapes.title and slide.shapes.title.text:
+                        ppt_utils.set_professional_title(slide, slide.shapes.title.text, color_scheme)
+                    
+                    # Update text formatting in shapes
+                    for shape in slide.shapes:
+                        if hasattr(shape, 'text_frame') and shape.text_frame.text:
+                            try:
+                                ppt_utils.format_text_advanced(
+                                    shape.text_frame,
+                                    color=ppt_utils.get_professional_color(color_scheme, 'text'),
+                                    auto_resize=True
+                                )
+                            except:
+                                continue
+                    
+                    updated_slides += 1
+                    
+                except Exception as e:
+                    warnings.append(f"Slide {i}: {str(e)}")
+                    continue
+        
+        return {
+            "message": f"Applied {color_scheme} theme to presentation",
+            "color_scheme": color_scheme,
+            "scheme_colors": scheme_colors,
+            "updated_slides": updated_slides,
+            "total_slides": len(pres.slides),
+            "warnings": warnings if warnings else None
+        }
+        
+    except Exception as e:
+        return {"error": f"Failed to apply professional theme: {str(e)}"}
+
+@app.tool()
+def enhance_existing_slide(
+    presentation_id: str = None,
+    slide_index: int = 0,
+    color_scheme: str = 'modern_blue',
+    enhance_title: bool = True,
+    enhance_content: bool = True,
+    enhance_shapes: bool = True,
+    enhance_charts: bool = True
+) -> Dict[str, Any]:
+    """
+    Enhance an existing slide with professional formatting and modern design.
+    
+    This tool improves slide quality by:
+    - Applying professional typography and colors
+    - Modernizing shape and chart styling
+    - Optimizing spacing and layout
+    - Ensuring visual consistency
+    
+    Args:
+        presentation_id: ID of the presentation (uses current if not specified)
+        slide_index: Index of the slide to enhance (0-based)
+        color_scheme: Color scheme to apply
+        enhance_title: Whether to enhance title formatting
+        enhance_content: Whether to enhance text content formatting
+        enhance_shapes: Whether to enhance shape formatting
+        enhance_charts: Whether to enhance chart formatting
+    
+    Returns:
+        Dictionary with enhancement results and changes made
+    
+    Examples:
+        Enhance all elements of a slide:
+            enhance_existing_slide(slide_index=0, color_scheme='corporate_gray')
+            
+        Only enhance text formatting:
+            enhance_existing_slide(slide_index=1, enhance_shapes=False, enhance_charts=False)
+    """
+    try:
+        # Get the presentation
+        if presentation_id:
+            if presentation_id not in presentations:
+                return {"error": f"Presentation '{presentation_id}' not found"}
+            pres = presentations[presentation_id]
+        else:
+            pres = get_current_presentation()
+        
+        # Validate slide index
+        if slide_index < 0 or slide_index >= len(pres.slides):
+            return {"error": f"Invalid slide index: {slide_index}. Presentation has {len(pres.slides)} slides"}
+        
+        slide = pres.slides[slide_index]
+        enhancements = []
+        warnings = []
+        
+        # Enhance slide background
+        try:
+            ppt_utils.apply_professional_slide_background(slide, color_scheme)
+            enhancements.append("Applied professional background")
+        except Exception as e:
+            warnings.append(f"Background: {str(e)}")
+        
+        # Enhance title
+        if enhance_title and slide.shapes.title and slide.shapes.title.text:
+            try:
+                original_title = slide.shapes.title.text
+                ppt_utils.set_professional_title(slide, original_title, color_scheme)
+                enhancements.append("Enhanced title formatting")
+            except Exception as e:
+                warnings.append(f"Title: {str(e)}")
+        
+        # Enhance content and shapes
+        shape_count = 0
+        chart_count = 0
+        
+        for i, shape in enumerate(slide.shapes):
+            try:
+                # Skip title shape (already handled)
+                if shape == slide.shapes.title:
+                    continue
+                
+                # Enhance text content
+                if enhance_content and hasattr(shape, 'text_frame') and shape.text_frame.text:
+                    try:
+                        ppt_utils.format_text_advanced(
+                            shape.text_frame,
+                            font_name=ppt_utils.get_professional_font('body', 'medium')['name'],
+                            color=ppt_utils.get_professional_color(color_scheme, 'text'),
+                            auto_resize=True
+                        )
+                        enhancements.append(f"Enhanced text in shape {i}")
+                    except Exception as e:
+                        warnings.append(f"Text shape {i}: {str(e)}")
+                
+                # Enhance regular shapes
+                if enhance_shapes and hasattr(shape, 'fill') and not hasattr(shape, 'chart'):
+                    try:
+                        ppt_utils.format_professional_shape(shape, color_scheme, 'primary')
+                        shape_count += 1
+                    except Exception as e:
+                        warnings.append(f"Shape {i}: {str(e)}")
+                
+                # Enhance charts
+                if enhance_charts and hasattr(shape, 'chart'):
+                    try:
+                        ppt_utils.format_professional_chart(shape.chart, color_scheme)
+                        chart_count += 1
+                    except Exception as e:
+                        warnings.append(f"Chart {i}: {str(e)}")
+                        
+            except Exception as e:
+                warnings.append(f"Shape {i}: {str(e)}")
+                continue
+        
+        if shape_count > 0:
+            enhancements.append(f"Enhanced {shape_count} shapes")
+        if chart_count > 0:
+            enhancements.append(f"Enhanced {chart_count} charts")
+        
+        return {
+            "message": f"Enhanced slide {slide_index} with {color_scheme} theme",
+            "slide_index": slide_index,
+            "color_scheme": color_scheme,
+            "enhancements": enhancements,
+            "shapes_enhanced": shape_count,
+            "charts_enhanced": chart_count,
+            "warnings": warnings if warnings else None
+        }
+        
+    except Exception as e:
+        return {"error": f"Failed to enhance slide: {str(e)}"}
+
+@app.tool()
+def get_color_schemes() -> Dict[str, Any]:
+    """
+    Get all available professional color schemes with their color values.
+    
+    Returns:
+        Dictionary containing all available color schemes and their color definitions
+    
+    Examples:
+        View available color schemes:
+            get_color_schemes()
+    """
+    return {
+        "message": "Available professional color schemes",
+        "color_schemes": ppt_utils.PROFESSIONAL_COLOR_SCHEMES,
+        "font_settings": ppt_utils.PROFESSIONAL_FONTS,
+        "layout_constants": ppt_utils.PROFESSIONAL_LAYOUT
+    }
 
 # ---- Main Execution ----
 def main(transport: str = "stdio", port: int = 8000):

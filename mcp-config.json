@@ -1,11 +1,14 @@
 {
   "mcpServers": {
     "ppt": {
-      "command": "uvx",
+      "command": "/Users/gongzhe/GitRepos/Office-PowerPoint-MCP-Server/.venv/bin/python",
       "args": [
-        "--from", "office-powerpoint-mcp-server", "ppt_mcp_server"
+        "/Users/gongzhe/GitRepos/Office-PowerPoint-MCP-Server/ppt_mcp_server.py"
       ],
-      "env": {}
+      "env": {
+        "PYTHONPATH": "/Users/gongzhe/GitRepos/Office-PowerPoint-MCP-Server",
+        "PPT_TEMPLATE_PATH": "/Users/gongzhe/GitRepos/Office-PowerPoint-MCP-Server/templates"
+      }
     }
   }
 }
