@@ -149,7 +149,7 @@ def register_presentation_tools(app: FastMCP, presentations: Dict, get_current_p
             }
 
     @app.tool()
-    def get_template_info(template_path: str) -> Dict:
+    def get_template_file_info(template_path: str) -> Dict:
         """Get information about a template file including layouts and properties."""
         # Check if template file exists
         if not os.path.exists(template_path):

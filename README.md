@@ -2,7 +2,7 @@
 [![smithery badge](https://smithery.ai/badge/@GongRzhe/Office-PowerPoint-MCP-Server)](https://smithery.ai/server/@GongRzhe/Office-PowerPoint-MCP-Server)
 ![](https://badge.mcpx.dev?type=server 'MCP Server')
 
-A streamlined MCP (Model Context Protocol) server for PowerPoint manipulation using python-pptx. **Version 2.0** consolidates functionality into 20 powerful, unified tools while maintaining 100% of the original capabilities. The server features a modular architecture with enhanced parameter handling, intelligent operation selection, and comprehensive error handling.
+A comprehensive MCP (Model Context Protocol) server for PowerPoint manipulation using python-pptx. **Version 2.0** provides 32 powerful tools organized into 11 specialized modules, offering complete PowerPoint creation, management, and professional design capabilities. The server features a modular architecture with enhanced parameter handling, intelligent operation selection, and comprehensive error handling.
 
 ----
 
@@ -58,6 +58,8 @@ A streamlined MCP (Model Context Protocol) server for PowerPoint manipulation us
 - **Theme application** with automatic styling across presentations
 - **Gradient backgrounds** with customizable directions and color schemes
 - **Slide enhancement** tools for existing content
+- **25 built-in slide templates** with dynamic sizing and visual effects
+- **Advanced template features** including auto-wrapping, dynamic font sizing, and professional animations
 
 ### Advanced Features
 - **Font analysis and optimization** using FontTools
@@ -192,21 +194,28 @@ If you have `uvx` installed, you can run the server directly from PyPI without l
 
 ## 🚀 What's New in v2.0
 
-### **Consolidated Tools (42 → 20)**
-- **52% reduction** in tool count while preserving all features
-- **Unified interfaces** with operation-based parameter selection
+### **Comprehensive Tool Suite (32 Tools)**
+- **Complete PowerPoint manipulation** with 32 specialized tools
+- **11 organized modules** covering all aspects of presentation creation
 - **Enhanced parameter handling** with comprehensive validation
-- **Intelligent defaults** for common use cases
+- **Intelligent defaults** and operation-based interfaces
+
+### **Built-in Slide Templates**
+- **25+ professional slide templates** with dynamic features built-in
+- **Advanced template system** with auto-generation capabilities
+- **Auto-sizing text** that adapts to content length and container size
+- **Professional visual effects** including shadows, glows, and gradients
+- **Complete presentation generation** from template sequences
 
 ### **Modular Architecture**
-- **4 organized modules**: presentation, content, structural, and professional tools
+- **11 specialized modules**: presentation, content, structural, professional, template, hyperlink, chart, connector, master, and transition tools
 - **Better maintainability** with separated concerns
 - **Easier extensibility** for adding new features
 - **Cleaner code structure** with shared utilities
 
 ## Available Tools
 
-The server provides **20 consolidated tools** organized into the following categories:
+The server provides **32 specialized tools** organized into the following categories:
 
 ### **Presentation Management (7 tools)**
 1. **create_presentation** - Create new presentations
@@ -214,7 +223,7 @@ The server provides **20 consolidated tools** organized into the following categ
 3. **open_presentation** - Open existing presentations
 4. **save_presentation** - Save presentations to files
 5. **get_presentation_info** - Get comprehensive presentation information
-6. **get_template_info** - Analyze template files and layouts
+6. **get_template_file_info** - Analyze template files and layouts
 7. **set_core_properties** - Set document properties
 
 ### **Content Management (6 tools)**
@@ -222,21 +231,37 @@ The server provides **20 consolidated tools** organized into the following categ
 9. **get_slide_info** - Get detailed slide information
 10. **populate_placeholder** - Populate placeholders with text
 11. **add_bullet_points** - Add formatted bullet points
-12. **manage_text** - ✨ **Unified text tool** (add/format/validate)
+12. **manage_text** - ✨ **Unified text tool** (add/format/validate/format_runs)
 13. **manage_image** - ✨ **Unified image tool** (add/enhance)
 
+### **Template Operations (7 tools)**
+14. **list_slide_templates** - Browse available slide layout templates
+15. **apply_slide_template** - Apply structured layout templates to existing slides
+16. **create_slide_from_template** - Create new slides using layout templates
+17. **create_presentation_from_templates** - Create complete presentations from template sequences
+18. **get_template_info** - Get detailed information about specific templates
+19. **auto_generate_presentation** - Automatically generate presentations based on topic
+20. **optimize_slide_text** - Optimize text elements for better readability and fit
+
 ### **Structural Elements (4 tools)**
-14. **add_table** - Create tables with enhanced formatting
-15. **format_table_cell** - Format individual table cells
-16. **add_shape** - Add shapes with text and formatting options
-17. **add_chart** - Create charts with comprehensive customization
+21. **add_table** - Create tables with enhanced formatting
+22. **format_table_cell** - Format individual table cells
+23. **add_shape** - Add shapes with text and formatting options
+24. **add_chart** - Create charts with comprehensive customization
 
 ### **Professional Design (3 tools)**
-18. **apply_professional_design** - ✨ **Unified design tool** (themes/slides/enhancement)
-19. **apply_picture_effects** - ✨ **Unified effects tool** (9 effects combined)
-20. **manage_fonts** - ✨ **Unified font tool** (analyze/optimize/recommend)
+25. **apply_professional_design** - ✨ **Unified design tool** (themes/slides/enhancement)
+26. **apply_picture_effects** - ✨ **Unified effects tool** (9+ effects combined)
+27. **manage_fonts** - ✨ **Unified font tool** (analyze/optimize/recommend)
 
-## 🌟 Key Consolidated Tools
+### **Specialized Features (5 tools)**
+28. **manage_hyperlinks** - Complete hyperlink management (add/remove/list/update)
+29. **manage_slide_masters** - Access and manage slide master properties and layouts
+30. **add_connector** - Add connector lines/arrows between points on slides
+31. **update_chart_data** - Replace existing chart data with new categories and series
+32. **manage_slide_transitions** - Basic slide transition management
+
+## 🌟 Key Unified Tools
 
 ### **`manage_text`** - All-in-One Text Management
 ```python
@@ -373,6 +398,84 @@ result = use_mcp_tool(
         "background_type": "professional_gradient",
         "color_scheme": "modern_blue",
         "gradient_direction": "diagonal"
+    }
+)
+```
+
+### Working with Built-in Slide Templates (New in v2.0)
+
+```python
+# List all available slide templates with their features
+result = use_mcp_tool(
+    server_name="ppt",
+    tool_name="list_slide_templates",
+    arguments={}
+)
+
+# Apply a professional template to an existing slide
+result = use_mcp_tool(
+    server_name="ppt",
+    tool_name="apply_slide_template",
+    arguments={
+        "slide_index": 0,
+        "template_id": "title_slide",
+        "color_scheme": "modern_blue",
+        "content_mapping": {
+            "title": "Quarterly Business Review",
+            "subtitle": "Q4 2024 Results",
+            "author": "Leadership Team"
+        }
+    }
+)
+
+# Create a new slide using a template
+result = use_mcp_tool(
+    server_name="ppt",
+    tool_name="create_slide_from_template",
+    arguments={
+        "template_id": "text_with_image",
+        "color_scheme": "elegant_green",
+        "content_mapping": {
+            "title": "Our Revolutionary Solution",
+            "content": "• 250% increase in efficiency\n• 98% customer satisfaction\n• Industry-leading performance"
+        },
+        "image_paths": {
+            "supporting": "path/to/product_image.jpg"
+        }
+    }
+)
+
+# Generate a complete presentation from multiple templates
+result = use_mcp_tool(
+    server_name="ppt",
+    tool_name="create_presentation_from_templates",
+    arguments={
+        "template_sequence": [
+            {
+                "template_id": "title_slide",
+                "content": {
+                    "title": "2024 Annual Report",
+                    "subtitle": "Growth and Innovation",
+                    "author": "Executive Team"
+                }
+            },
+            {
+                "template_id": "key_metrics_dashboard",
+                "content": {
+                    "metric_1_value": "94%",
+                    "metric_2_value": "$2.4M",
+                    "metric_3_value": "247"
+                }
+            },
+            {
+                "template_id": "before_after_comparison",
+                "content": {
+                    "content_left": "Manual processes taking hours",
+                    "content_right": "Automated workflows in minutes"
+                }
+            }
+        ],
+        "color_scheme": "modern_blue"
     }
 )
 ```
@@ -628,23 +731,111 @@ The server includes 4 built-in professional color schemes:
 
 Each scheme includes primary, secondary, accent, light, and text colors optimized for business presentations.
 
+## 🎨 Built-in Slide Templates (New in v2.0)
+
+The PowerPoint MCP Server now includes **25 professional slide templates** with advanced dynamic features. All templates support:
+
+### **Dynamic Features**
+- **Automatic text sizing** based on content length and container dimensions
+- **Intelligent text wrapping** to fit within specified areas
+- **Visual effects** including shadows, glows, and outlines
+- **Gradient backgrounds** with multi-layer compositions
+- **Professional animations** ready for presentation delivery
+- **Interactive hover effects** for enhanced user experience
+- **Smart content overflow handling** with automatic adjustments
+
+### **Available Template Categories**
+
+#### **Title & Introduction Slides**
+- `title_slide` - Dynamic title slide with gradient background and text effects
+- `chapter_intro` - Section divider with chapter numbering and styling
+- `thank_you_slide` - Closing slide with contact information and effects
+
+#### **Content Layout Slides**
+- `text_with_image` - Text content with stylized image and interactive elements
+- `two_column_text` - Two equal columns of text with dynamic sizing
+- `two_column_text_images` - Two columns with text and corresponding images
+- `three_column_layout` - Three equal columns with text and images
+- `full_image_slide` - Large background image with text overlay
+
+#### **Business & Analytics Slides**
+- `key_metrics_dashboard` - Interactive metrics dashboard with animated counters
+- `before_after_comparison` - Dynamic comparison layout with visual dividers
+- `chart_comparison` - Two charts side by side for performance comparison
+- `data_table_slide` - Slide focused on tabular data with professional styling
+- `timeline_slide` - Horizontal timeline with milestones and effects
+
+#### **Process & Flow Slides**
+- `process_flow` - Step-by-step process visualization with enhanced effects
+- `agenda_slide` - Table of contents or agenda overview with styling
+- `quote_testimonial` - Featured quote or customer testimonial with effects
+
+#### **Team & Organization Slides**
+- `team_introduction` - Team member showcase with photos and roles
+
+### **Template Usage Examples**
+
+```python
+# Browse all available templates
+templates = use_mcp_tool("ppt", "list_slide_templates", {})
+
+# Key templates with their features:
+{
+  "title_slide": {
+    "features": ["Dynamic text sizing", "Gradient backgrounds", "Text effects"],
+    "elements": ["title", "subtitle", "author", "decorative_accent"]
+  },
+  "key_metrics_dashboard": {
+    "features": ["Animated counters", "Gradient containers", "Trend visualization"],
+    "elements": ["3 metric containers", "trend chart", "insights callout"]
+  },
+  "before_after_comparison": {
+    "features": ["Split gradient background", "VS divider", "Improvement arrow"],
+    "elements": ["before/after headers", "comparison content", "improvement metrics"]
+  }
+}
+```
+
+### **Color Scheme Integration**
+All templates work seamlessly with the 4 professional color schemes:
+- **modern_blue**: Microsoft-inspired theme with dynamic gradients
+- **corporate_gray**: Professional grayscale with blue accents
+- **elegant_green**: Forest green with cream and light accents
+- **warm_red**: Deep red with orange and yellow highlights
+
+### **Dynamic Content Adaptation**
+Templates automatically adjust to content:
+- **Font sizes** scale based on text length (8pt - 44pt range)
+- **Line spacing** adjusts for readability (1.0x - 1.4x)
+- **Text wrapping** intelligently breaks lines at optimal points
+- **Container sizing** adapts to content overflow
+- **Visual effects** scale appropriately with element sizes
+
 ## 📁 File Structure
 
 ```
 Office-PowerPoint-MCP-Server/
 ├── ppt_mcp_server.py          # Main consolidated server (v2.0)
-├── tools/                     # Organized tool modules
+├── slide_layout_templates.json # 25+ professional slide templates with dynamic features
+├── tools/                     # 11 specialized tool modules (32 tools total)
 │   ├── __init__.py
 │   ├── presentation_tools.py  # Presentation management (7 tools)
 │   ├── content_tools.py       # Content & slides (6 tools)
+│   ├── template_tools.py      # Template operations (7 tools)
 │   ├── structural_tools.py    # Tables, shapes, charts (4 tools)
-│   └── professional_tools.py  # Themes, effects, fonts (3 tools)
-├── utils/                     # Organized utility modules
+│   ├── professional_tools.py  # Themes, effects, fonts (3 tools)
+│   ├── hyperlink_tools.py     # Hyperlink management (1 tool)
+│   ├── chart_tools.py         # Advanced chart operations (1 tool)
+│   ├── connector_tools.py     # Connector lines/arrows (1 tool)
+│   ├── master_tools.py        # Slide master management (1 tool)
+│   └── transition_tools.py    # Slide transitions (1 tool)
+├── utils/                     # 7 organized utility modules (68+ functions)
 │   ├── __init__.py
 │   ├── core_utils.py          # Error handling & safe operations
 │   ├── presentation_utils.py  # Presentation management utilities
 │   ├── content_utils.py       # Content & slide operations
 │   ├── design_utils.py        # Themes, colors, effects & fonts
+│   ├── template_utils.py      # Template management & dynamic features
 │   └── validation_utils.py    # Text & layout validation
 ├── setup_mcp.py              # Interactive setup script
 ├── pyproject.toml            # Updated for v2.0
@@ -654,22 +845,23 @@ Office-PowerPoint-MCP-Server/
 ## 🏗️ Architecture Benefits
 
 ### **Modular Design**
-- **5 focused utility modules** with clear responsibilities
-- **4 organized tool modules** for better maintainability
-- **Reduced file sizes** from 3,500+ lines to ~300 lines per module
+- **7 focused utility modules** with clear responsibilities
+- **11 organized tool modules** for comprehensive coverage
+- **68+ utility functions** organized by functionality
+- **32 MCP tools** covering all PowerPoint manipulation needs
 - **Clear separation of concerns** for easier development
 
 ### **Code Organization**
-- **60% reduction** in total codebase size by removing unused functions
-- **Better discoverability** with logical function grouping
+- **Logical grouping** of related functionality across modules
+- **Better discoverability** with organized tool categories
 - **Improved testability** with isolated modules
 - **Future extensibility** through modular structure
 
-### **Performance Improvements**
-- **Reduced memory footprint** by removing 25+ unused functions
-- **Faster imports** with smaller, focused modules
-- **Better caching** due to modular structure
-- **Cleaner dependencies** between components
+### **Comprehensive Coverage**
+- **Complete PowerPoint lifecycle** from creation to presentation
+- **Advanced template system** with auto-generation capabilities
+- **Professional design tools** with multiple effects and styling options
+- **Specialized features** including hyperlinks, connectors, and slide masters
 
 ### **Developer Experience**
 - **Clear responsibility boundaries** between modules
@@ -677,16 +869,23 @@ Office-PowerPoint-MCP-Server/
 - **Simpler testing** with isolated functionality
 - **Enhanced maintainability** through separation of concerns
 
-## 🔄 Migration from v1.0
+## 🔄 What's New in Version 2.0
 
-**All original functionality is preserved!** The consolidated tools accept all the same parameters as the original tools:
+**Enhanced functionality with comprehensive tool coverage!** The updated server provides:
 
-| **v1.0 Tools** | **v2.0 Equivalent** | **Migration** |
-|-----------------|---------------------|---------------|
-| `add_textbox`, `add_textbox_advanced`, `format_text_advanced`, `validate_text_fit` | `manage_text` | Use `operation` parameter: "add", "format", "validate" |
-| `add_image`, `add_image_from_base64`, `enhance_image_with_pillow`, `apply_professional_image_enhancement` | `manage_image` | Use `operation` parameter: "add", "enhance" |
-| All 9 picture effect tools | `apply_picture_effects` | Pass effects as dictionary |
-| `add_professional_slide`, `apply_professional_theme`, `enhance_existing_slide`, `get_color_schemes` | `apply_professional_design` | Use `operation` parameter |
+### **New Specialized Tools Added:**
+- **`manage_hyperlinks`** - Complete hyperlink management for text elements
+- **`update_chart_data`** - Advanced chart data replacement and updating
+- **`add_connector`** - Connector lines and arrows between slide elements
+- **`manage_slide_masters`** - Access to slide master properties and layouts
+- **`manage_slide_transitions`** - Basic slide transition management
+- **`auto_generate_presentation`** - AI-powered presentation generation
+- **`optimize_slide_text`** - Text optimization for better readability
+
+### **Enhanced Existing Tools:**
+- **`manage_text`** - Now supports text run formatting with `format_runs` operation
+- **`create_presentation_from_templates`** - Enhanced template sequence processing
+- **`apply_picture_effects`** - Expanded effect combinations and options
 
 ## License
 

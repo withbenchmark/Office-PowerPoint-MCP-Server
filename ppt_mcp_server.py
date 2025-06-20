@@ -5,17 +5,21 @@ Consolidated version with 20 tools organized into multiple modules.
 """
 import os
 import argparse
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, Any
 from mcp.server.fastmcp import FastMCP
 
-import utils as ppt_utils
+# import utils  # Currently unused
 from tools import (
     register_presentation_tools,
     register_content_tools,
     register_structural_tools,
     register_professional_tools,
     register_template_tools,
-    register_enhanced_template_tools
+    register_hyperlink_tools,
+    register_chart_tools,
+    register_connector_tools,
+    register_master_tools,
+    register_transition_tools
 )
 
 # Initialize the FastMCP server
@@ -267,11 +271,62 @@ register_template_tools(
     get_current_presentation_id
 )
 
-register_enhanced_template_tools(
+register_hyperlink_tools(
     app,
     presentations,
-    get_current_presentation_id
+    get_current_presentation_id,
+    validate_parameters,
+    is_positive,
+    is_non_negative,
+    is_in_range,
+    is_valid_rgb
 )
+
+register_chart_tools(
+    app,
+    presentations,
+    get_current_presentation_id,
+    validate_parameters,
+    is_positive,
+    is_non_negative,
+    is_in_range,
+    is_valid_rgb
+)
+
+
+register_connector_tools(
+    app,
+    presentations,
+    get_current_presentation_id,
+    validate_parameters,
+    is_positive,
+    is_non_negative,
+    is_in_range,
+    is_valid_rgb
+)
+
+register_master_tools(
+    app,
+    presentations,
+    get_current_presentation_id,
+    validate_parameters,
+    is_positive,
+    is_non_negative,
+    is_in_range,
+    is_valid_rgb
+)
+
+register_transition_tools(
+    app,
+    presentations,
+    get_current_presentation_id,
+    validate_parameters,
+    is_positive,
+    is_non_negative,
+    is_in_range,
+    is_valid_rgb
+)
+
 
 # ---- Additional Utility Tools ----
 
@@ -313,31 +368,40 @@ def switch_presentation(presentation_id: str) -> Dict:
 def get_server_info() -> Dict:
     """Get information about the MCP server."""
     return {
-        "name": "PowerPoint MCP Server - Consolidated Edition",
-        "version": "2.0.0",
-        "total_tools": 32,  # Consolidated from 42, added 12 template tools
+        "name": "PowerPoint MCP Server - Enhanced Edition",
+        "version": "2.1.0",
+        "total_tools": 32,  # Organized into 11 specialized modules
         "loaded_presentations": len(presentations),
         "current_presentation": current_presentation_id,
         "features": [
             "Presentation Management (7 tools)",
             "Content Management (6 tools)", 
+            "Template Operations (7 tools)",
             "Structural Elements (4 tools)",
             "Professional Design (3 tools)",
-            "Template System (6 tools)",
-            "Enhanced Templates (6 tools)"
+            "Specialized Features (5 tools)"
         ],
         "improvements": [
-            "Consolidated 42 tools into 32 powerful tools",
-            "Organized code into multiple modules",
-            "Enhanced parameter handling",
-            "Unified operation interfaces",
-            "Better error handling and validation",
-            "Comprehensive slide template system with 20+ layouts",
-            "Professional color schemes and typography",
-            "Automated presentation generation",
+            "32 specialized tools organized into 11 focused modules",
+            "68+ utility functions across 7 organized utility modules",
+            "Enhanced parameter handling and validation",
+            "Unified operation interfaces with comprehensive coverage",
+            "Advanced template system with auto-generation capabilities",
+            "Professional design tools with multiple effects and styling",
+            "Specialized features including hyperlinks, connectors, slide masters",
             "Dynamic text sizing and intelligent wrapping",
             "Advanced visual effects and styling",
-            "Content-aware optimization"
+            "Content-aware optimization and validation",
+            "Complete PowerPoint lifecycle management",
+            "Modular architecture for better maintainability"
+        ],
+        "new_enhanced_features": [
+            "Hyperlink Management - Add, update, remove, and list hyperlinks in text",
+            "Advanced Chart Data Updates - Replace chart data with new categories and series",
+            "Advanced Text Run Formatting - Apply formatting to specific text runs",
+            "Shape Connectors - Add connector lines and arrows between points",
+            "Slide Master Management - Access and manage slide masters and layouts",
+            "Slide Transitions - Basic transition management (placeholder for future)"
         ]
     }
 

@@ -12,7 +12,7 @@ def register_professional_tools(app: FastMCP, presentations: Dict, get_current_p
     
     @app.tool()
     def apply_professional_design(
-        operation: str,  # "slide", "theme", "enhance", "get_schemes"
+        operation: str,  # "professional_slide", "theme", "enhance", "get_schemes"
         slide_index: Optional[int] = None,
         slide_type: str = "title_content",
         color_scheme: str = "modern_blue",
@@ -25,7 +25,8 @@ def register_professional_tools(app: FastMCP, presentations: Dict, get_current_p
         enhance_charts: bool = True,
         presentation_id: Optional[str] = None
     ) -> Dict:
-        """Unified professional design tool for themes, slides, and enhancements."""
+        """Unified professional design tool for themes, slides, and visual enhancements.
+        This applies professional styling and themes rather than structural layout changes."""
         pres_id = presentation_id if presentation_id is not None else get_current_presentation_id()
         
         if operation == "get_schemes":
@@ -40,8 +41,8 @@ def register_professional_tools(app: FastMCP, presentations: Dict, get_current_p
         pres = presentations[pres_id]
         
         try:
-            if operation == "slide":
-                # Add professional slide
+            if operation == "professional_slide":
+                # Add professional slide with advanced styling
                 if slide_index is not None and (slide_index < 0 or slide_index >= len(pres.slides)):
                     return {
                         "error": f"Invalid slide index: {slide_index}. Available slides: 0-{len(pres.slides) - 1}"

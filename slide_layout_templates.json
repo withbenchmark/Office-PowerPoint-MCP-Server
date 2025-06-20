@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "version": "3.0",
-    "description": "Unified comprehensive slide layout templates with dynamic features",
+    "version": "4.0",
+    "description": "Unified comprehensive slide layout templates with enhanced dynamic features",
     "created_date": "2025-01-20",
     "total_templates": 25,
     "supported_features": [
@@ -13,6 +13,10 @@
       "Automatic content adaptation",
       "Stylistic text variations",
       "Professional animation readiness",
+      "Interactive hover effects",
+      "Animated counters and metrics",
+      "Smart content overflow handling",
+      "Multi-layer gradient backgrounds",
       "Text placeholders",
       "Image placeholders", 
       "Chart placeholders",

@@ -1,6 +1,7 @@
 """
-Template-based slide creation tools for PowerPoint MCP Server.
-Handles template application, template management, and automated slide generation.
+Enhanced template-based slide creation tools for PowerPoint MCP Server.
+Handles template application, template management, automated slide generation,
+and advanced features like dynamic sizing, auto-wrapping, and visual effects.
 """
 from typing import Dict, List, Optional, Any
 from mcp.server.fastmcp import FastMCP
@@ -38,7 +39,8 @@ def register_template_tools(app: FastMCP, presentations: Dict, get_current_prese
         presentation_id: Optional[str] = None
     ) -> Dict:
         """
-        Apply a slide layout template to an existing slide.
+        Apply a structured layout template to an existing slide.
+        This modifies slide layout and content structure using predefined templates.
         
         Args:
             slide_index: Index of the slide to apply template to
@@ -393,4 +395,127 @@ def register_template_tools(app: FastMCP, presentations: Dict, get_current_prese
         except Exception as e:
             return {
                 "error": f"Failed to auto-generate presentation: {str(e)}"
+            }
+    
+    # Text optimization tools
+    
+    
+    @app.tool()
+    def optimize_slide_text(
+        slide_index: int,
+        auto_resize: bool = True,
+        auto_wrap: bool = True,
+        optimize_spacing: bool = True,
+        min_font_size: int = 8,
+        max_font_size: int = 36,
+        presentation_id: Optional[str] = None
+    ) -> Dict:
+        """
+        Optimize text elements on a slide for better readability and fit.
+        
+        Args:
+            slide_index: Index of the slide to optimize
+            auto_resize: Whether to automatically resize fonts to fit containers
+            auto_wrap: Whether to apply intelligent text wrapping
+            optimize_spacing: Whether to optimize line spacing
+            min_font_size: Minimum allowed font size
+            max_font_size: Maximum allowed font size
+            presentation_id: Presentation ID (uses current if None)
+        """
+        pres_id = presentation_id if presentation_id is not None else get_current_presentation_id()
+        
+        if pres_id is None or pres_id not in presentations:
+            return {
+                "error": "No presentation is currently loaded or the specified ID is invalid"
+            }
+        
+        pres = presentations[pres_id]
+        
+        if slide_index < 0 or slide_index >= len(pres.slides):
+            return {
+                "error": f"Invalid slide index: {slide_index}. Available slides: 0-{len(pres.slides) - 1}"
+            }
+        
+        slide = pres.slides[slide_index]
+        
+        try:
+            optimizations_applied = []
+            manager = template_utils.get_enhanced_template_manager()
+            
+            # Analyze each text shape on the slide
+            for i, shape in enumerate(slide.shapes):
+                if hasattr(shape, 'text_frame') and shape.text_frame.text:
+                    text = shape.text_frame.text
+                    
+                    # Calculate container dimensions
+                    container_width = shape.width.inches
+                    container_height = shape.height.inches
+                    
+                    shape_optimizations = []
+                    
+                    # Apply auto-resize if enabled
+                    if auto_resize:
+                        optimal_size = template_utils.calculate_dynamic_font_size(
+                            text, container_width, container_height
+                        )
+                        optimal_size = max(min_font_size, min(max_font_size, optimal_size))
+                        
+                        # Apply the calculated font size
+                        for paragraph in shape.text_frame.paragraphs:
+                            for run in paragraph.runs:
+                                run.font.size = template_utils.Pt(optimal_size)
+                        
+                        shape_optimizations.append(f"Font resized to {optimal_size}pt")
+                    
+                    # Apply auto-wrap if enabled
+                    if auto_wrap:
+                        current_font_size = 14  # Default assumption
+                        if shape.text_frame.paragraphs and shape.text_frame.paragraphs[0].runs:
+                            if shape.text_frame.paragraphs[0].runs[0].font.size:
+                                current_font_size = shape.text_frame.paragraphs[0].runs[0].font.size.pt
+                        
+                        wrapped_text = template_utils.wrap_text_automatically(
+                            text, container_width, current_font_size
+                        )
+                        
+                        if wrapped_text != text:
+                            shape.text_frame.text = wrapped_text
+                            shape_optimizations.append("Text wrapped automatically")
+                    
+                    # Optimize spacing if enabled
+                    if optimize_spacing:
+                        text_length = len(text)
+                        if text_length > 300:
+                            line_spacing = 1.4
+                        elif text_length > 150:
+                            line_spacing = 1.3
+                        else:
+                            line_spacing = 1.2
+                        
+                        for paragraph in shape.text_frame.paragraphs:
+                            paragraph.line_spacing = line_spacing
+                        
+                        shape_optimizations.append(f"Line spacing set to {line_spacing}")
+                    
+                    if shape_optimizations:
+                        optimizations_applied.append({
+                            "shape_index": i,
+                            "optimizations": shape_optimizations
+                        })
+            
+            return {
+                "message": f"Optimized {len(optimizations_applied)} text elements on slide {slide_index}",
+                "slide_index": slide_index,
+                "optimizations_applied": optimizations_applied,
+                "settings": {
+                    "auto_resize": auto_resize,
+                    "auto_wrap": auto_wrap,
+                    "optimize_spacing": optimize_spacing,
+                    "font_size_range": f"{min_font_size}-{max_font_size}pt"
+                }
+            }
+            
+        except Exception as e:
+            return {
+                "error": f"Failed to optimize slide text: {str(e)}"
             }

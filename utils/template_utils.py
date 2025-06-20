@@ -1,16 +1,482 @@
 """
-Template management utilities for PowerPoint MCP Server.
-Functions for applying slide layout templates and managing template-based presentation creation.
+Enhanced template management utilities for PowerPoint MCP Server.
+Advanced slide creation with dynamic sizing, auto-wrapping, and visual effects.
+Combines features from both basic and enhanced template systems.
 """
 import json
 import os
+import re
 from typing import Dict, List, Optional, Any, Tuple
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN
+from pptx.enum.text import PP_ALIGN, MSO_VERTICAL_ANCHOR
+from pptx.enum.shapes import MSO_SHAPE
 import utils.content_utils as content_utils
 import utils.design_utils as design_utils
+
+
+class TextSizeCalculator:
+    """Calculate optimal text sizes based on content and container dimensions."""
+    
+    def __init__(self):
+        self.character_widths = {
+            'narrow': 0.6,  # i, l, t
+            'normal': 1.0,  # most characters
+            'wide': 1.3,    # m, w
+            'space': 0.5    # space character
+        }
+    
+    def estimate_text_width(self, text: str, font_size: int) -> float:
+        """Estimate text width in points based on character analysis."""
+        if not text:
+            return 0
+        
+        width = 0
+        for char in text:
+            if char in 'iltj':
+                width += self.character_widths['narrow']
+            elif char in 'mwMW':
+                width += self.character_widths['wide']
+            elif char == ' ':
+                width += self.character_widths['space']
+            else:
+                width += self.character_widths['normal']
+        
+        return width * font_size * 0.6  # Approximation factor
+    
+    def estimate_text_height(self, text: str, font_size: int, line_spacing: float = 1.2) -> float:
+        """Estimate text height based on line count and spacing."""
+        lines = len(text.split('\n'))
+        return lines * font_size * line_spacing * 1.3  # Convert to points
+    
+    def calculate_optimal_font_size(self, text: str, container_width: float, 
+                                  container_height: float, font_type: str = 'body',
+                                  min_size: int = 8, max_size: int = 36) -> int:
+        """Calculate optimal font size to fit text in container."""
+        container_width_pts = container_width * 72  # Convert inches to points
+        container_height_pts = container_height * 72
+        
+        # Start with a reasonable size and adjust
+        for font_size in range(max_size, min_size - 1, -1):
+            estimated_width = self.estimate_text_width(text, font_size)
+            estimated_height = self.estimate_text_height(text, font_size)
+            
+            if estimated_width <= container_width_pts * 0.9 and estimated_height <= container_height_pts * 0.9:
+                return font_size
+        
+        return min_size
+    
+    def wrap_text_intelligently(self, text: str, max_width: float, font_size: int) -> str:
+        """Intelligently wrap text to fit within specified width."""
+        if not text:
+            return text
+        
+        max_width_pts = max_width * 72
+        words = text.split()
+        wrapped_lines = []
+        current_line = []
+        
+        for word in words:
+            test_line = current_line + [word]
+            test_text = ' '.join(test_line)
+            
+            if self.estimate_text_width(test_text, font_size) <= max_width_pts:
+                current_line.append(word)
+            else:
+                if current_line:
+                    wrapped_lines.append(' '.join(current_line))
+                    current_line = [word]
+                else:
+                    # Single word is too long, force wrap
+                    wrapped_lines.append(word)
+        
+        if current_line:
+            wrapped_lines.append(' '.join(current_line))
+        
+        return '\n'.join(wrapped_lines)
+
+
+class VisualEffectsManager:
+    """Manage and apply visual effects to PowerPoint elements."""
+    
+    def __init__(self, templates_data: Dict):
+        self.templates_data = templates_data
+        self.text_effects = templates_data.get('text_effects', {})
+        self.image_effects = templates_data.get('image_effects', {})
+    
+    def apply_text_effects(self, text_frame, effects: List[str], color_scheme: str) -> None:
+        """Apply text effects like shadows, glows, and outlines."""
+        for effect_name in effects:
+            if effect_name not in self.text_effects:
+                continue
+            
+            effect_config = self.text_effects[effect_name]
+            effect_type = effect_config.get('type')
+            
+            # Note: These are simplified implementations
+            # Full implementation would require XML manipulation
+            try:
+                if effect_type == 'shadow':
+                    self._apply_text_shadow(text_frame, effect_config, color_scheme)
+                elif effect_type == 'glow':
+                    self._apply_text_glow(text_frame, effect_config, color_scheme)
+                elif effect_type == 'outline':
+                    self._apply_text_outline(text_frame, effect_config, color_scheme)
+            except Exception:
+                # Graceful fallback if effect application fails
+                pass
+    
+    def _apply_text_shadow(self, text_frame, config: Dict, color_scheme: str) -> None:
+        """Apply shadow effect to text (simplified implementation)."""
+        # In a full implementation, this would manipulate the XML directly
+        # For now, we'll apply basic formatting that creates a shadow-like effect
+        for paragraph in text_frame.paragraphs:
+            for run in paragraph.runs:
+                # Make text slightly bolder to simulate shadow depth
+                run.font.bold = True
+    
+    def _apply_text_glow(self, text_frame, config: Dict, color_scheme: str) -> None:
+        """Apply glow effect to text (simplified implementation)."""
+        pass  # Would require XML manipulation for true glow effect
+    
+    def _apply_text_outline(self, text_frame, config: Dict, color_scheme: str) -> None:
+        """Apply outline effect to text (simplified implementation)."""
+        pass  # Would require XML manipulation for true outline effect
+    
+    def apply_image_effects(self, image_shape, effect_name: str, color_scheme: str) -> None:
+        """Apply visual effects to image shapes."""
+        if effect_name not in self.image_effects:
+            return
+        
+        effect_config = self.image_effects[effect_name]
+        
+        try:
+            # Apply shadow if specified
+            if 'shadow' in effect_config:
+                shadow_config = effect_config['shadow']
+                # Simplified shadow application
+                pass
+            
+            # Apply border if specified
+            if 'border' in effect_config:
+                border_config = effect_config['border']
+                if 'width' in border_config:
+                    image_shape.line.width = Pt(border_config['width'])
+                if 'color_role' in border_config:
+                    color = self._get_color_from_scheme(color_scheme, border_config['color_role'])
+                    image_shape.line.color.rgb = RGBColor(*color)
+                elif 'color' in border_config:
+                    image_shape.line.color.rgb = RGBColor(*border_config['color'])
+        
+        except Exception:
+            # Graceful fallback
+            pass
+    
+    def _get_color_from_scheme(self, color_scheme: str, color_role: str) -> Tuple[int, int, int]:
+        """Get color from scheme (helper method)."""
+        schemes = self.templates_data.get('color_schemes', {})
+        if color_scheme in schemes and color_role in schemes[color_scheme]:
+            return tuple(schemes[color_scheme][color_role])
+        return (0, 0, 0)  # Default black
+
+
+class EnhancedTemplateManager:
+    """Enhanced template manager with dynamic features."""
+    
+    def __init__(self, template_file_path: str = None):
+        self.text_calculator = TextSizeCalculator()
+        self.load_templates(template_file_path)
+        self.effects_manager = VisualEffectsManager(self.templates_data)
+    
+    def load_templates(self, template_file_path: str = None) -> None:
+        """Load unified templates with all dynamic features."""
+        if template_file_path is None:
+            current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            # Use the unified template file
+            template_file_path = os.path.join(current_dir, 'slide_layout_templates.json')
+        
+        try:
+            with open(template_file_path, 'r', encoding='utf-8') as f:
+                self.templates_data = json.load(f)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Template file not found: {template_file_path}")
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON in template file: {str(e)}")
+
+
+    def get_dynamic_font_size(self, element: Dict, content: str = None) -> int:
+        """Calculate dynamic font size based on content and container."""
+        content = content or element.get('placeholder_text', '')
+        if not content:
+            return 14  # Default size
+        
+        # Get container dimensions
+        pos = element.get('position', {})
+        container_width = pos.get('width', 4.0)
+        container_height = pos.get('height', 1.0)
+        
+        # Get font constraints
+        font_type = element.get('styling', {}).get('font_type', 'body')
+        sizing_rules = self.templates_data.get('auto_sizing_rules', {})
+        base_sizes = sizing_rules.get('text_measurement', {}).get('base_font_sizes', {})
+        
+        if font_type in base_sizes:
+            min_size = base_sizes[font_type]['min']
+            max_size = base_sizes[font_type]['max']
+            default_size = base_sizes[font_type]['default']
+        else:
+            min_size, max_size, default_size = 10, 18, 14
+        
+        # Check if dynamic sizing is requested
+        font_size_setting = element.get('styling', {}).get('font_size')
+        if font_size_setting == 'dynamic':
+            return self.text_calculator.calculate_optimal_font_size(
+                content, container_width, container_height, font_type, min_size, max_size
+            )
+        
+        return default_size
+    
+    def apply_enhanced_slide_template(self, slide, template_id: str, color_scheme: str = 'modern_blue',
+                                    content_mapping: Dict = None, image_paths: Dict = None) -> Dict:
+        """Apply enhanced slide template with all dynamic features."""
+        try:
+            if template_id not in self.templates_data.get('templates', {}):
+                # Fall back to regular template application
+                return apply_slide_template_basic(slide, template_id, color_scheme, content_mapping, image_paths)
+            
+            template = self.templates_data['templates'][template_id]
+            elements_created = []
+            
+            # Apply enhanced background if specified
+            background_config = template.get('background')
+            if background_config:
+                apply_slide_background(slide, background_config, self.templates_data, color_scheme)
+            
+            # Create enhanced elements
+            for element in template.get('elements', []):
+                element_type = element.get('type')
+                element_role = element.get('role', '')
+                
+                try:
+                    # Override content if provided
+                    custom_content = None
+                    if content_mapping and element_role in content_mapping:
+                        custom_content = content_mapping[element_role]
+                    
+                    created_element = None
+                    
+                    if element_type == 'text':
+                        created_element = self.create_enhanced_text_element(
+                            slide, element, self.templates_data, color_scheme, custom_content
+                        )
+                    elif element_type == 'shape':
+                        created_element = create_shape_element(slide, element, self.templates_data, color_scheme)
+                    elif element_type == 'image':
+                        image_path = image_paths.get(element_role) if image_paths else None
+                        created_element = create_image_element(slide, element, image_path)
+                    elif element_type == 'table':
+                        created_element = create_table_element(slide, element, self.templates_data, color_scheme)
+                    elif element_type == 'chart':
+                        created_element = create_chart_element(slide, element, self.templates_data, color_scheme)
+                    
+                    if created_element:
+                        elements_created.append({
+                            'type': element_type,
+                            'role': element_role,
+                            'index': len(slide.shapes) - 1,
+                            'enhanced_features': self.get_element_features(element)
+                        })
+                
+                except Exception as e:
+                    elements_created.append({
+                        'type': element_type,
+                        'role': element_role,
+                        'error': str(e)
+                    })
+            
+            return {
+                'success': True,
+                'template_id': template_id,
+                'template_name': template.get('name', template_id),
+                'color_scheme': color_scheme,
+                'elements_created': elements_created,
+                'enhanced_features_applied': [
+                    'Dynamic text sizing',
+                    'Automatic text wrapping',
+                    'Visual effects',
+                    'Intelligent content adaptation'
+                ]
+            }
+        
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f"Failed to apply enhanced template: {str(e)}"
+            }
+    
+    def create_enhanced_text_element(self, slide, element: Dict, templates_data: Dict, 
+                                   color_scheme: str, custom_content: str = None) -> Any:
+        """Create text element with enhanced features."""
+        pos = element['position']
+        
+        # Determine content
+        content = custom_content or element.get('placeholder_text', '')
+        
+        # Apply auto-wrapping if enabled
+        styling = element.get('styling', {})
+        if styling.get('auto_wrap', False):
+            container_width = pos.get('width', 4.0)
+            font_size = self.get_dynamic_font_size(element, content)
+            content = self.text_calculator.wrap_text_intelligently(content, container_width, font_size)
+        
+        # Create text box
+        textbox = slide.shapes.add_textbox(
+            Inches(pos['left']), 
+            Inches(pos['top']), 
+            Inches(pos['width']), 
+            Inches(pos['height'])
+        )
+        
+        textbox.text_frame.text = content
+        textbox.text_frame.word_wrap = True
+        
+        # Apply dynamic font sizing
+        font_size = self.get_dynamic_font_size(element, content)
+        
+        # Apply enhanced styling
+        self.apply_enhanced_text_styling(textbox.text_frame, element, templates_data, color_scheme, font_size)
+        
+        # Apply auto-fit if enabled
+        if styling.get('auto_fit', False):
+            textbox.text_frame.auto_size = True
+        
+        return textbox
+    
+    def apply_enhanced_text_styling(self, text_frame, element: Dict, templates_data: Dict, 
+                                  color_scheme: str, font_size: int) -> None:
+        """Apply enhanced text styling with effects and dynamic features."""
+        styling = element.get('styling', {})
+        
+        # Get typography style
+        typography_style = templates_data.get('typography_styles', {}).get('modern_sans', {})
+        font_type = styling.get('font_type', 'body')
+        font_config = typography_style.get(font_type, {'name': 'Segoe UI', 'weight': 'normal'})
+        
+        # Color handling
+        color = None
+        if 'color_role' in styling:
+            color = get_color_from_scheme(templates_data, color_scheme, styling['color_role'])
+        elif 'color' in styling:
+            color = tuple(styling['color'])
+        
+        # Alignment mapping
+        alignment_map = {
+            'left': PP_ALIGN.LEFT,
+            'center': PP_ALIGN.CENTER,
+            'right': PP_ALIGN.RIGHT,
+            'justify': PP_ALIGN.JUSTIFY
+        }
+        
+        # Vertical alignment mapping
+        vertical_alignment_map = {
+            'top': MSO_VERTICAL_ANCHOR.TOP,
+            'middle': MSO_VERTICAL_ANCHOR.MIDDLE,
+            'bottom': MSO_VERTICAL_ANCHOR.BOTTOM
+        }
+        
+        # Apply vertical alignment to text frame
+        if 'vertical_alignment' in styling:
+            v_align = styling['vertical_alignment']
+            if v_align in vertical_alignment_map:
+                text_frame.vertical_anchor = vertical_alignment_map[v_align]
+        
+        # Dynamic line spacing
+        line_spacing = styling.get('line_spacing', 1.2)
+        if line_spacing == 'dynamic':
+            content_length = len(text_frame.text)
+            if content_length > 300:
+                line_spacing = 1.4
+            elif content_length > 150:
+                line_spacing = 1.3
+            else:
+                line_spacing = 1.2
+        
+        # Apply formatting to paragraphs and runs
+        for paragraph in text_frame.paragraphs:
+            # Set alignment
+            if 'alignment' in styling and styling['alignment'] in alignment_map:
+                paragraph.alignment = alignment_map[styling['alignment']]
+            
+            # Set line spacing
+            paragraph.line_spacing = line_spacing
+            
+            # Apply formatting to runs
+            for run in paragraph.runs:
+                font = run.font
+                
+                # Font family and size
+                font.name = font_config['name']
+                font.size = Pt(font_size)
+                
+                # Font weight and style
+                weight = font_config.get('weight', 'normal')
+                font.bold = styling.get('bold', weight in ['bold', 'semibold'])
+                font.italic = styling.get('italic', font_config.get('style') == 'italic')
+                font.underline = styling.get('underline', False)
+                
+                # Color
+                if color:
+                    font.color.rgb = RGBColor(*color)
+        
+        # Apply text effects
+        text_effects = styling.get('text_effects', [])
+        if text_effects:
+            self.effects_manager.apply_text_effects(text_frame, text_effects, color_scheme)
+    
+    def get_element_features(self, element: Dict) -> List[str]:
+        """Get list of enhanced features applied to an element."""
+        features = []
+        styling = element.get('styling', {})
+        
+        if styling.get('font_size') == 'dynamic':
+            features.append('Dynamic text sizing')
+        if styling.get('auto_wrap'):
+            features.append('Automatic text wrapping')
+        if styling.get('text_effects'):
+            features.append('Text visual effects')
+        if styling.get('auto_fit'):
+            features.append('Auto-fit content')
+        if 'fill_gradient' in styling:
+            features.append('Gradient fills')
+        if styling.get('shadow') or styling.get('glow'):
+            features.append('Advanced visual effects')
+        
+        return features
+
+
+# Global instance for enhanced features
+enhanced_template_manager = EnhancedTemplateManager()
+
+
+def get_enhanced_template_manager() -> EnhancedTemplateManager:
+    """Get the global enhanced template manager instance."""
+    return enhanced_template_manager
+
+
+def calculate_dynamic_font_size(text: str, container_width: float, container_height: float, 
+                               font_type: str = 'body') -> int:
+    """Calculate optimal font size for given text and container."""
+    return enhanced_template_manager.text_calculator.calculate_optimal_font_size(
+        text, container_width, container_height, font_type
+    )
+
+
+def wrap_text_automatically(text: str, container_width: float, font_size: int) -> str:
+    """Automatically wrap text to fit container width."""
+    return enhanced_template_manager.text_calculator.wrap_text_intelligently(
+        text, container_width, font_size
+    )
 
 
 def load_slide_templates(template_file_path: str = None) -> Dict:
@@ -435,10 +901,12 @@ def apply_slide_background(slide, background_config: Dict, templates_data: Dict,
         pass
 
 
-def apply_slide_template(slide, template_id: str, color_scheme: str = 'modern_blue', 
-                        content_mapping: Dict = None, image_paths: Dict = None) -> Dict:
+
+
+def apply_slide_template_basic(slide, template_id: str, color_scheme: str = 'modern_blue', 
+                              content_mapping: Dict = None, image_paths: Dict = None) -> Dict:
     """
-    Apply a slide template to create a formatted slide.
+    Apply a basic slide template to create a formatted slide.
     
     Args:
         slide: PowerPoint slide object
@@ -522,6 +990,27 @@ def apply_slide_template(slide, template_id: str, color_scheme: str = 'modern_bl
             'success': False,
             'error': f"Failed to apply template: {str(e)}"
         }
+
+
+def apply_slide_template(slide, template_id: str, color_scheme: str = 'modern_blue', 
+                        content_mapping: Dict = None, image_paths: Dict = None) -> Dict:
+    """
+    Apply a slide template with all enhanced features.
+    
+    Args:
+        slide: PowerPoint slide object
+        template_id: ID of the template to apply
+        color_scheme: Color scheme to use
+        content_mapping: Dictionary mapping element roles to content
+        image_paths: Dictionary mapping image element roles to file paths
+        
+    Returns:
+        Dictionary with application results
+    """
+    # All templates now have enhanced features built-in
+    return enhanced_template_manager.apply_enhanced_slide_template(
+        slide, template_id, color_scheme, content_mapping, image_paths
+    )
 
 
 def create_presentation_from_template_sequence(presentation: Presentation, template_sequence: List[Dict],

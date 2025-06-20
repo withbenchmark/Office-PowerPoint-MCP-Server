@@ -166,13 +166,14 @@ def register_content_tools(app: FastMCP, presentations: Dict, get_current_presen
     @app.tool()
     def manage_text(
         slide_index: int,
-        operation: str,  # "add", "format", "validate"
+        operation: str,  # "add", "format", "validate", "format_runs"
         left: float = 1.0,
         top: float = 1.0,
         width: float = 4.0,
         height: float = 2.0,
         text: str = "",
         shape_index: Optional[int] = None,  # For format/validate operations
+        text_runs: Optional[List[Dict]] = None,  # For format_runs operation
         # Formatting options
         font_size: Optional[int] = None,
         font_name: Optional[str] = None,
@@ -190,7 +191,7 @@ def register_content_tools(app: FastMCP, presentations: Dict, get_current_presen
         max_font_size: int = 72,
         presentation_id: Optional[str] = None
     ) -> Dict:
-        """Unified text management tool for adding, formatting, and validating text."""
+        """Unified text management tool for adding, formatting, validating text, and formatting multiple text runs."""
         pres_id = presentation_id if presentation_id is not None else get_current_presentation_id()
         
         if pres_id is None or pres_id not in presentations:
@@ -292,9 +293,76 @@ def register_content_tools(app: FastMCP, presentations: Dict, get_current_presen
                 
                 return validation_result
             
+            elif operation == "format_runs":
+                # Format multiple text runs with different formatting
+                if shape_index is None or shape_index < 0 or shape_index >= len(slide.shapes):
+                    return {
+                        "error": f"Invalid shape index for format_runs: {shape_index}. Available shapes: 0-{len(slide.shapes) - 1}"
+                    }
+                
+                if not text_runs:
+                    return {"error": "text_runs parameter is required for format_runs operation"}
+                
+                shape = slide.shapes[shape_index]
+                
+                # Check if shape has text
+                if not hasattr(shape, 'text_frame') or not shape.text_frame:
+                    return {"error": "Shape does not contain text"}
+                
+                # Clear existing text and rebuild with formatted runs
+                text_frame = shape.text_frame
+                text_frame.clear()
+                
+                formatted_runs = []
+                
+                for run_data in text_runs:
+                    if 'text' not in run_data:
+                        continue
+                        
+                    # Add paragraph if needed
+                    if not text_frame.paragraphs:
+                        paragraph = text_frame.paragraphs[0]
+                    else:
+                        paragraph = text_frame.add_paragraph()
+                    
+                    # Add run with text
+                    run = paragraph.add_run()
+                    run.text = run_data['text']
+                    
+                    # Apply formatting using pptx imports
+                    from pptx.util import Pt
+                    from pptx.dml.color import RGBColor
+                    
+                    if 'bold' in run_data:
+                        run.font.bold = run_data['bold']
+                    if 'italic' in run_data:
+                        run.font.italic = run_data['italic']
+                    if 'underline' in run_data:
+                        run.font.underline = run_data['underline']
+                    if 'font_size' in run_data:
+                        run.font.size = Pt(run_data['font_size'])
+                    if 'font_name' in run_data:
+                        run.font.name = run_data['font_name']
+                    if 'color' in run_data and is_valid_rgb(run_data['color']):
+                        run.font.color.rgb = RGBColor(*run_data['color'])
+                    if 'hyperlink' in run_data:
+                        run.hyperlink.address = run_data['hyperlink']
+                    
+                    formatted_runs.append({
+                        "text": run_data['text'],
+                        "formatting_applied": {k: v for k, v in run_data.items() if k != 'text'}
+                    })
+                
+                return {
+                    "message": f"Applied formatting to {len(formatted_runs)} text runs on shape {shape_index}",
+                    "slide_index": slide_index,
+                    "shape_index": shape_index,
+                    "formatted_runs": formatted_runs
+                }
+            
             else:
                 return {
-                    "error": f"Invalid operation: {operation}. Must be 'add', 'format', or 'validate'"
+                    "error": f"Invalid operation: {operation}. Must be 'add', 'format', 'validate', or 'format_runs'"
                 }
         
         except Exception as e:
