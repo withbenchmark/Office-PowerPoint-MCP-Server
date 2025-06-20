@@ -447,12 +447,36 @@ def add_slide(
     if error:
         placeholders = []
     
-    return {
+    # Automatically validate and fix the slide content
+    validation_result, error = ppt_utils.safe_operation(
+        "validate_slide",
+        lambda: ppt_utils.validate_and_fix_slide_content(slide[0], auto_fix=True)
+    )
+    
+    result = {
         "message": f"Added slide with layout '{slide[1].name}'",
         "slide_index": len(pres.slides) - 1,
         "layout_name": slide[1].name,
         "placeholders": placeholders
     }
+    
+    # Include validation results if available
+    if validation_result and not error:
+        result["validation"] = {
+            "issues_found": len(validation_result.get('issues_found', [])),
+            "fixes_applied": len(validation_result.get('fixes_applied', [])),
+            "summary": validation_result.get('validation_summary', {}),
+            "message": validation_result.get('message', 'Validation completed')
+        }
+        
+        # Add warnings if any fixes were applied
+        if validation_result.get('fixes_applied'):
+            result["validation"]["fixes_applied_details"] = validation_result['fixes_applied']
+            
+    elif error:
+        result["validation"] = {"warning": f"Slide validation failed: {error}"}
+    
+    return result
 
 @app.tool()
 def get_slide_info(slide_index: int, presentation_id: Optional[str] = None) -> Dict:
@@ -642,10 +666,29 @@ def add_textbox(
                 alignment=alignment
             )
         
-        return {
+        # Automatically validate and fix the slide content after adding textbox
+        validation_result, error = ppt_utils.safe_operation(
+            "validate_slide",
+            lambda: ppt_utils.validate_and_fix_slide_content(slide, auto_fix=True)
+        )
+        
+        result = {
             "message": f"Added textbox to slide {slide_index}",
             "shape_index": len(slide.shapes) - 1
         }
+        
+        # Include validation results if available
+        if validation_result and not error:
+            if validation_result.get('fixes_applied'):
+                result["validation"] = {
+                    "fixes_applied": len(validation_result['fixes_applied']),
+                    "message": "Textbox automatically adjusted for optimal layout",
+                    "details": validation_result['fixes_applied']
+                }
+        elif error:
+            result["validation_warning"] = f"Post-creation validation failed: {error}"
+            
+        return result
     except Exception as e:
         return {
             "error": f"Failed to add textbox: {str(e)}"
@@ -1448,6 +1491,96 @@ def validate_text_fit(
         return {"error": f"Failed to validate text fit: {str(e)}"}
 
 @app.tool()
+def validate_and_fix_slide(
+    presentation_id: str = None,
+    slide_index: int = 0,
+    auto_fix: bool = True,
+    min_font_size: int = 8,
+    max_font_size: int = 72
+) -> Dict[str, Any]:
+    """
+    Comprehensively validate and automatically fix slide content issues.
+    
+    This tool performs thorough validation of:
+    - Font sizes (too large/small for readability and layout)
+    - Text boundary overflow and content fitting
+    - Shape positioning and layout reasonableness
+    - Text margins and spacing
+    - Shape overlaps and proper spacing
+    
+    Args:
+        presentation_id: ID of the presentation (uses current if not specified)
+        slide_index: Index of the slide to validate (0-based)
+        auto_fix: Whether to automatically fix detected issues
+        min_font_size: Minimum allowed font size in points
+        max_font_size: Maximum allowed font size in points
+    
+    Returns:
+        Dictionary with detailed validation results and applied fixes
+    
+    Examples:
+        Validate and fix current slide:
+            validate_and_fix_slide(slide_index=0)
+            
+        Check slide without applying fixes:
+            validate_and_fix_slide(slide_index=1, auto_fix=False)
+            
+        Custom font size constraints:
+            validate_and_fix_slide(slide_index=0, min_font_size=10, max_font_size=48)
+    """
+    try:
+        # Get the presentation
+        if presentation_id:
+            if presentation_id not in presentations:
+                return {"error": f"Presentation '{presentation_id}' not found"}
+            pres = presentations[presentation_id]
+        else:
+            pres = get_current_presentation()
+        
+        # Validate slide index
+        if slide_index < 0 or slide_index >= len(pres.slides):
+            return {"error": f"Invalid slide index: {slide_index}. Presentation has {len(pres.slides)} slides"}
+        
+        slide = pres.slides[slide_index]
+        
+        # Parameter validation
+        valid, error_msg = validate_parameters({
+            'min_font_size': (min_font_size, [(is_positive, "Minimum font size must be positive")]),
+            'max_font_size': (max_font_size, [(is_positive, "Maximum font size must be positive")]),
+            'slide_index': (slide_index, [(is_non_negative, "Slide index must be non-negative")])
+        })
+        
+        if not valid:
+            return {"error": error_msg}
+        
+        if min_font_size >= max_font_size:
+            return {"error": "Minimum font size must be less than maximum font size"}
+        
+        # Perform validation and fixing
+        result = ppt_utils.validate_and_fix_slide_content(
+            slide, 
+            auto_fix=auto_fix,
+            min_font_size=min_font_size,
+            max_font_size=max_font_size
+        )
+        
+        # Enhance the result with additional context
+        result['slide_info'] = {
+            'slide_index': slide_index,
+            'total_slides': len(pres.slides),
+            'auto_fix_enabled': auto_fix,
+            'font_size_constraints': {
+                'min': min_font_size,
+                'max': max_font_size
+            }
+        }
+        
+        return result
+        
+    except Exception as e:
+        return {"error": f"Failed to validate slide: {str(e)}"}
+
+@app.tool()
 def add_textbox_advanced(
     presentation_id: str = None,
     slide_index: int = 0,
@@ -1881,6 +2014,998 @@ def get_color_schemes() -> Dict[str, Any]:
         "font_settings": ppt_utils.PROFESSIONAL_FONTS,
         "layout_constants": ppt_utils.PROFESSIONAL_LAYOUT
     }
+
+# ---- Advanced Features: Gradient Backgrounds, Image Enhancement, Font Beautification ----
+
+@app.tool()
+def set_slide_gradient_background(slide_index: int, start_color: List[int], end_color: List[int], 
+                                 direction: str = "horizontal", presentation_id: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Set a gradient background for a specific slide using Pillow to generate the gradient.
+    
+    Args:
+        slide_index: Index of the slide (0-based)
+        start_color: RGB color for gradient start [r, g, b] (0-255 each)
+        end_color: RGB color for gradient end [r, g, b] (0-255 each)
+        direction: Gradient direction ('horizontal', 'vertical', 'diagonal')
+        presentation_id: ID of the presentation (uses current if not specified)
+        
+    Returns:
+        Dictionary with operation results
+        
+    Examples:
+        Set horizontal blue to white gradient on slide 0:
+            set_slide_gradient_background(0, [0, 120, 215], [255, 255, 255], "horizontal")
+            
+        Set diagonal gradient from red to yellow on slide 1:
+            set_slide_gradient_background(1, [220, 20, 60], [255, 215, 0], "diagonal")
+    """
+    try:
+        # Parameter validation
+        valid, error = validate_parameters({
+            'slide_index': (slide_index, [(is_non_negative, "must be non-negative")]),
+            'start_color': (start_color, [(is_valid_rgb, "must be a list of 3 integers (0-255)")]),
+            'end_color': (end_color, [(is_valid_rgb, "must be a list of 3 integers (0-255)")]),
+            'direction': (direction, [(is_in_list(['horizontal', 'vertical', 'diagonal']), 
+                                    "must be 'horizontal', 'vertical', or 'diagonal'")])
+        })
+        
+        if not valid:
+            return {"error": error}
+        
+        # Get presentation
+        if presentation_id:
+            if presentation_id not in presentations:
+                return {"error": f"Presentation with ID '{presentation_id}' not found"}
+            pres = presentations[presentation_id]
+        else:
+            pres = get_current_presentation()
+        
+        # Validate slide index
+        if slide_index >= len(pres.slides):
+            return {"error": f"Slide index {slide_index} is out of range. Presentation has {len(pres.slides)} slides."}
+        
+        slide = pres.slides[slide_index]
+        
+        # Convert RGB lists to tuples
+        start_color_tuple = tuple(start_color)
+        end_color_tuple = tuple(end_color)
+        
+        # Set gradient background
+        result = ppt_utils.set_slide_gradient_background(slide, start_color_tuple, end_color_tuple, direction)
+        
+        if result['success']:
+            return {
+                "message": result['message'],
+                "slide_index": slide_index,
+                "gradient_info": result['gradient_info'],
+                "presentation_id": presentation_id or current_presentation_id
+            }
+        else:
+            return {"error": result['message']}
+            
+    except Exception as e:
+        return {"error": f"Failed to set gradient background: {str(e)}"}
+
+@app.tool()
+def create_professional_gradient_background(slide_index: int, color_scheme: str = "modern_blue", 
+                                          style: str = "subtle", direction: str = "diagonal",
+                                          presentation_id: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Create a professional gradient background using predefined color schemes.
+    
+    Args:
+        slide_index: Index of the slide (0-based)
+        color_scheme: Professional color scheme ('modern_blue', 'corporate_gray', 'elegant_green', 'warm_red')
+        style: Gradient style ('subtle', 'bold', 'accent')
+        direction: Gradient direction ('horizontal', 'vertical', 'diagonal')
+        presentation_id: ID of the presentation (uses current if not specified)
+        
+    Returns:
+        Dictionary with operation results
+        
+    Examples:
+        Create subtle blue gradient background:
+            create_professional_gradient_background(0, "modern_blue", "subtle", "diagonal")
+            
+        Create bold corporate gradient:
+            create_professional_gradient_background(1, "corporate_gray", "bold", "horizontal")
+    """
+    try:
+        # Parameter validation
+        valid_schemes = list(ppt_utils.PROFESSIONAL_COLOR_SCHEMES.keys())
+        valid_styles = ['subtle', 'bold', 'accent']
+        valid_directions = ['horizontal', 'vertical', 'diagonal']
+        
+        valid, error = validate_parameters({
+            'slide_index': (slide_index, [(is_non_negative, "must be non-negative")]),
+            'color_scheme': (color_scheme, [(is_in_list(valid_schemes), f"must be one of {valid_schemes}")]),
+            'style': (style, [(is_in_list(valid_styles), f"must be one of {valid_styles}")]),
+            'direction': (direction, [(is_in_list(valid_directions), f"must be one of {valid_directions}")])
+        })
+        
+        if not valid:
+            return {"error": error}
+        
+        # Get presentation
+        if presentation_id:
+            if presentation_id not in presentations:
+                return {"error": f"Presentation with ID '{presentation_id}' not found"}
+            pres = presentations[presentation_id]
+        else:
+            pres = get_current_presentation()
+        
+        # Validate slide index
+        if slide_index >= len(pres.slides):
+            return {"error": f"Slide index {slide_index} is out of range. Presentation has {len(pres.slides)} slides."}
+        
+        slide = pres.slides[slide_index]
+        
+        # Create professional gradient background
+        result = ppt_utils.create_professional_gradient_background(slide, color_scheme, style, direction)
+        
+        if result['success']:
+            return {
+                "message": result['message'],
+                "slide_index": slide_index,
+                "color_scheme": color_scheme,
+                "style": style,
+                "gradient_info": result['gradient_info'],
+                "presentation_id": presentation_id or current_presentation_id
+            }
+        else:
+            return {"error": result['message']}
+            
+    except Exception as e:
+        return {"error": f"Failed to create professional gradient background: {str(e)}"}
+
+@app.tool()
+def enhance_image_with_pillow(image_path: str, brightness: float = 1.0, contrast: float = 1.0,
+                             saturation: float = 1.0, sharpness: float = 1.0, blur_radius: float = 0,
+                             filter_type: Optional[str] = None, output_path: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Enhance an image using Pillow filters and adjustments.
+    
+    Args:
+        image_path: Path to the input image file
+        brightness: Brightness adjustment (1.0 = no change, >1.0 = brighter, <1.0 = darker)
+        contrast: Contrast adjustment (1.0 = no change, >1.0 = more contrast)
+        saturation: Color saturation adjustment (1.0 = no change, >1.0 = more saturated)
+        sharpness: Sharpness adjustment (1.0 = no change, >1.0 = sharper)
+        blur_radius: Gaussian blur radius (0 = no blur, >0 = blur effect)
+        filter_type: Special filter to apply ('DETAIL', 'EDGE_ENHANCE', 'EMBOSS', 'SMOOTH', 'SHARPEN', etc.)
+        output_path: Path for enhanced image (optional, creates temp file if not provided)
+        
+    Returns:
+        Dictionary with enhancement results and output path
+        
+    Examples:
+        Enhance image for presentation (brighter, more contrast):
+            enhance_image_with_pillow("/path/to/image.jpg", brightness=1.1, contrast=1.2, sharpness=1.1)
+            
+        Apply artistic effect:
+            enhance_image_with_pillow("/path/to/image.jpg", saturation=1.5, filter_type="EDGE_ENHANCE")
+    """
+    try:
+        # Parameter validation
+        valid_filters = ['DETAIL', 'EDGE_ENHANCE', 'EDGE_ENHANCE_MORE', 'EMBOSS', 'FIND_EDGES', 
+                        'SMOOTH', 'SMOOTH_MORE', 'SHARPEN']
+        
+        valid, error = validate_parameters({
+            'brightness': (brightness, [(lambda x: x > 0, "must be positive")]),
+            'contrast': (contrast, [(lambda x: x > 0, "must be positive")]),
+            'saturation': (saturation, [(lambda x: x > 0, "must be positive")]),
+            'sharpness': (sharpness, [(lambda x: x > 0, "must be positive")]),
+            'blur_radius': (blur_radius, [(is_non_negative, "must be non-negative")])
+        })
+        
+        if not valid:
+            return {"error": error}
+        
+        if filter_type and filter_type not in valid_filters:
+            return {"error": f"Invalid filter_type. Must be one of: {valid_filters}"}
+        
+        # Check if image file exists
+        if not os.path.exists(image_path):
+            return {"error": f"Image file not found: {image_path}"}
+        
+        # Prepare enhancement settings
+        enhancements = {
+            'brightness': brightness,
+            'contrast': contrast,
+            'saturation': saturation,
+            'sharpness': sharpness,
+            'blur_radius': blur_radius,
+            'filter': filter_type
+        }
+        
+        # Enhance the image
+        result = ppt_utils.enhance_image_pillow(image_path, enhancements, output_path)
+        
+        if result['success']:
+            return {
+                "message": result['message'],
+                "original_path": result['original_path'],
+                "enhanced_path": result['enhanced_path'],
+                "enhancements_applied": result['enhancements_applied'],
+                "image_info": result.get('image_info', {})
+            }
+        else:
+            return {"error": result['message']}
+            
+    except Exception as e:
+        return {"error": f"Failed to enhance image: {str(e)}"}
+
+@app.tool()
+def apply_professional_image_enhancement(image_path: str, style: str = "presentation", 
+                                       output_path: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Apply professional image enhancement presets suitable for presentations.
+    
+    Args:
+        image_path: Path to the input image file
+        style: Enhancement style ('presentation', 'vibrant', 'subtle', 'sharp')
+        output_path: Path for enhanced image (optional, creates temp file if not provided)
+        
+    Returns:
+        Dictionary with enhancement results
+        
+    Examples:
+        Enhance image for business presentation:
+            apply_professional_image_enhancement("/path/to/image.jpg", "presentation")
+            
+        Create vibrant image for creative presentation:
+            apply_professional_image_enhancement("/path/to/image.jpg", "vibrant")
+    """
+    try:
+        # Parameter validation
+        valid_styles = ['presentation', 'vibrant', 'subtle', 'sharp']
+        
+        valid, error = validate_parameters({
+            'style': (style, [(is_in_list(valid_styles), f"must be one of {valid_styles}")])
+        })
+        
+        if not valid:
+            return {"error": error}
+        
+        # Check if image file exists
+        if not os.path.exists(image_path):
+            return {"error": f"Image file not found: {image_path}"}
+        
+        # Apply professional enhancement
+        result = ppt_utils.apply_professional_image_enhancement(image_path, style)
+        
+        if result['success']:
+            return {
+                "message": result['message'],
+                "original_path": result['original_path'],
+                "enhanced_path": result['enhanced_path'],
+                "style": style,
+                "enhancements_applied": result['enhancements_applied'],
+                "image_info": result.get('image_info', {})
+            }
+        else:
+            return {"error": result['message']}
+            
+    except Exception as e:
+        return {"error": f"Failed to apply professional image enhancement: {str(e)}"}
+
+@app.tool()
+def analyze_font_file(font_path: str) -> Dict[str, Any]:
+    """
+    Analyze a font file using FontTools to extract detailed information.
+    
+    Args:
+        font_path: Path to the font file (.ttf, .otf)
+        
+    Returns:
+        Dictionary with comprehensive font information
+        
+    Examples:
+        Analyze a font file:
+            analyze_font_file("/path/to/font.ttf")
+    """
+    try:
+        # Check if font file exists
+        if not os.path.exists(font_path):
+            return {"error": f"Font file not found: {font_path}"}
+        
+        # Analyze the font
+        result = ppt_utils.analyze_font_file(font_path)
+        
+        if result['success']:
+            return {
+                "message": result['message'],
+                "font_info": result['font_info']
+            }
+        else:
+            return {"error": result['message']}
+            
+    except Exception as e:
+        return {"error": f"Failed to analyze font: {str(e)}"}
+
+@app.tool()
+def optimize_font_for_presentation(font_path: str, output_path: Optional[str] = None, 
+                                  text_content: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Optimize a font file for presentation use by subsetting and optimizing.
+    
+    Args:
+        font_path: Path to the input font file (.ttf, .otf)
+        output_path: Path for optimized font (optional, creates temp file if not provided)
+        text_content: Specific text content to optimize for (optional, uses common characters if not provided)
+        
+    Returns:
+        Dictionary with optimization results
+        
+    Examples:
+        Optimize font for general presentation use:
+            optimize_font_for_presentation("/path/to/font.ttf")
+            
+        Optimize font for specific content:
+            optimize_font_for_presentation("/path/to/font.ttf", text_content="Hello World Presentation")
+    """
+    try:
+        # Check if font file exists
+        if not os.path.exists(font_path):
+            return {"error": f"Font file not found: {font_path}"}
+        
+        # Optimize the font
+        result = ppt_utils.optimize_font_for_presentation(font_path, output_path, text_content)
+        
+        if result['success']:
+            return {
+                "message": result['message'],
+                "original_path": result['original_path'],
+                "optimized_path": result['optimized_path'],
+                "size_reduction_percent": result['size_reduction'],
+                "file_sizes": result['file_sizes']
+            }
+        else:
+            return {"error": result['message']}
+            
+    except Exception as e:
+        return {"error": f"Failed to optimize font: {str(e)}"}
+
+@app.tool()
+def get_font_recommendations(font_path: str, presentation_type: str = "business") -> Dict[str, Any]:
+    """
+    Get font usage recommendations based on analysis and presentation type.
+    
+    Args:
+        font_path: Path to the font file to analyze
+        presentation_type: Type of presentation ('business', 'creative', 'academic')
+        
+    Returns:
+        Dictionary with font recommendations and usage suggestions
+        
+    Examples:
+        Get recommendations for business presentation:
+            get_font_recommendations("/path/to/font.ttf", "business")
+            
+        Get recommendations for creative presentation:
+            get_font_recommendations("/path/to/font.ttf", "creative")
+    """
+    try:
+        # Parameter validation
+        valid_types = ['business', 'creative', 'academic']
+        
+        valid, error = validate_parameters({
+            'presentation_type': (presentation_type, [(is_in_list(valid_types), f"must be one of {valid_types}")])
+        })
+        
+        if not valid:
+            return {"error": error}
+        
+        # Check if font file exists
+        if not os.path.exists(font_path):
+            return {"error": f"Font file not found: {font_path}"}
+        
+        # First analyze the font
+        analysis_result = ppt_utils.analyze_font_file(font_path)
+        
+        if not analysis_result['success']:
+            return {"error": f"Failed to analyze font: {analysis_result['message']}"}
+        
+        # Get recommendations based on analysis
+        recommendations = ppt_utils.get_font_recommendations(analysis_result, presentation_type)
+        
+        return {
+            "message": f"Font recommendations for {presentation_type} presentation",
+            "font_path": font_path,
+            "presentation_type": presentation_type,
+            "font_analysis": analysis_result['font_info'],
+            "recommendations": recommendations
+        }
+            
+    except Exception as e:
+        return {"error": f"Failed to get font recommendations: {str(e)}"}
+
+# ---- Picture Effects Tools ----
+
+@app.tool()
+def apply_picture_shadow(
+    slide_index: int,
+    shape_index: int,
+    shadow_type: str = 'outer',
+    blur_radius: float = 4.0,
+    distance: float = 3.0,
+    direction: float = 315.0,
+    color: List[int] = [0, 0, 0],
+    transparency: float = 0.6,
+    presentation_id: Optional[str] = None
+) -> Dict:
+    """Apply shadow effect to a picture shape."""
+    # Use the specified presentation or the current one
+    pres_id = presentation_id if presentation_id is not None else current_presentation_id
+    
+    if pres_id is None or pres_id not in presentations:
+        return {
+            "error": "No presentation is currently loaded or the specified ID is invalid"
+        }
+    
+    pres = presentations[pres_id]
+    
+    # Validate slide index
+    if slide_index < 0 or slide_index >= len(pres.slides):
+        return {
+            "error": f"Invalid slide index: {slide_index}. Available slides: 0-{len(pres.slides) - 1}"
+        }
+    
+    slide = pres.slides[slide_index]
+    
+    # Validate shape index
+    if shape_index < 0 or shape_index >= len(slide.shapes):
+        return {
+            "error": f"Invalid shape index: {shape_index}. Available shapes: 0-{len(slide.shapes) - 1}"
+        }
+    
+    shape = slide.shapes[shape_index]
+    
+    # Check if shape is a picture
+    if not hasattr(shape, 'image') and shape.shape_type.name != 'PICTURE':
+        return {
+            "error": f"Shape at index {shape_index} is not a picture shape"
+        }
+    
+    # Validate parameters
+    valid, error = validate_parameters({
+        'blur_radius': (blur_radius, [(is_non_negative, "must be non-negative")]),
+        'distance': (distance, [(is_non_negative, "must be non-negative")]),
+        'direction': (direction, [(is_in_range(0, 360), "must be between 0 and 360 degrees")]),
+        'transparency': (transparency, [(is_in_range(0, 1), "must be between 0.0 and 1.0")]),
+        'color': (color, [(is_valid_rgb, "must be a valid RGB list [R, G, B] with values 0-255")])
+    })
+    
+    if not valid:
+        return {"error": error}
+    
+    try:
+        result = ppt_utils.apply_picture_shadow(
+            shape, shadow_type, blur_radius, distance, direction, tuple(color), transparency
+        )
+        
+        if result['success']:
+            return {
+                "message": result['message'],
+                "shadow_info": result['shadow_info'],
+                "slide_index": slide_index,
+                "shape_index": shape_index
+            }
+        else:
+            return {"error": result['message']}
+            
+    except Exception as e:
+        return {"error": f"Failed to apply shadow effect: {str(e)}"}
+
+@app.tool()
+def apply_picture_reflection(
+    slide_index: int,
+    shape_index: int,
+    size: float = 0.5,
+    transparency: float = 0.5,
+    distance: float = 0.0,
+    blur: float = 4.0,
+    presentation_id: Optional[str] = None
+) -> Dict:
+    """Apply reflection effect to a picture shape."""
+    # Use the specified presentation or the current one
+    pres_id = presentation_id if presentation_id is not None else current_presentation_id
+    
+    if pres_id is None or pres_id not in presentations:
+        return {
+            "error": "No presentation is currently loaded or the specified ID is invalid"
+        }
+    
+    pres = presentations[pres_id]
+    
+    # Validate slide index
+    if slide_index < 0 or slide_index >= len(pres.slides):
+        return {
+            "error": f"Invalid slide index: {slide_index}. Available slides: 0-{len(pres.slides) - 1}"
+        }
+    
+    slide = pres.slides[slide_index]
+    
+    # Validate shape index
+    if shape_index < 0 or shape_index >= len(slide.shapes):
+        return {
+            "error": f"Invalid shape index: {shape_index}. Available shapes: 0-{len(slide.shapes) - 1}"
+        }
+    
+    shape = slide.shapes[shape_index]
+    
+    # Check if shape is a picture
+    if not hasattr(shape, 'image') and shape.shape_type.name != 'PICTURE':
+        return {
+            "error": f"Shape at index {shape_index} is not a picture shape"
+        }
+    
+    # Validate parameters
+    valid, error = validate_parameters({
+        'size': (size, [(is_in_range(0, 1), "must be between 0.0 and 1.0")]),
+        'transparency': (transparency, [(is_in_range(0, 1), "must be between 0.0 and 1.0")]),
+        'distance': (distance, [(is_non_negative, "must be non-negative")]),
+        'blur': (blur, [(is_non_negative, "must be non-negative")])
+    })
+    
+    if not valid:
+        return {"error": error}
+    
+    try:
+        result = ppt_utils.apply_picture_reflection(shape, size, transparency, distance, blur)
+        
+        if result['success']:
+            return {
+                "message": result['message'],
+                "reflection_info": result['reflection_info'],
+                "slide_index": slide_index,
+                "shape_index": shape_index
+            }
+        else:
+            return {"error": result['message']}
+            
+    except Exception as e:
+        return {"error": f"Failed to apply reflection effect: {str(e)}"}
+
+@app.tool()
+def apply_picture_glow(
+    slide_index: int,
+    shape_index: int,
+    size: float = 5.0,
+    color: List[int] = [0, 176, 240],
+    transparency: float = 0.4,
+    presentation_id: Optional[str] = None
+) -> Dict:
+    """Apply glow effect to a picture shape."""
+    # Use the specified presentation or the current one
+    pres_id = presentation_id if presentation_id is not None else current_presentation_id
+    
+    if pres_id is None or pres_id not in presentations:
+        return {
+            "error": "No presentation is currently loaded or the specified ID is invalid"
+        }
+    
+    pres = presentations[pres_id]
+    
+    # Validate slide index
+    if slide_index < 0 or slide_index >= len(pres.slides):
+        return {
+            "error": f"Invalid slide index: {slide_index}. Available slides: 0-{len(pres.slides) - 1}"
+        }
+    
+    slide = pres.slides[slide_index]
+    
+    # Validate shape index
+    if shape_index < 0 or shape_index >= len(slide.shapes):
+        return {
+            "error": f"Invalid shape index: {shape_index}. Available shapes: 0-{len(slide.shapes) - 1}"
+        }
+    
+    shape = slide.shapes[shape_index]
+    
+    # Check if shape is a picture
+    if not hasattr(shape, 'image') and shape.shape_type.name != 'PICTURE':
+        return {
+            "error": f"Shape at index {shape_index} is not a picture shape"
+        }
+    
+    # Validate parameters
+    valid, error = validate_parameters({
+        'size': (size, [(is_positive, "must be positive")]),
+        'transparency': (transparency, [(is_in_range(0, 1), "must be between 0.0 and 1.0")]),
+        'color': (color, [(is_valid_rgb, "must be a valid RGB list [R, G, B] with values 0-255")])
+    })
+    
+    if not valid:
+        return {"error": error}
+    
+    try:
+        result = ppt_utils.apply_picture_glow(shape, size, tuple(color), transparency)
+        
+        if result['success']:
+            return {
+                "message": result['message'],
+                "glow_info": result['glow_info'],
+                "slide_index": slide_index,
+                "shape_index": shape_index
+            }
+        else:
+            return {"error": result['message']}
+            
+    except Exception as e:
+        return {"error": f"Failed to apply glow effect: {str(e)}"}
+
+@app.tool()
+def apply_picture_soft_edges(
+    slide_index: int,
+    shape_index: int,
+    radius: float = 2.5,
+    presentation_id: Optional[str] = None
+) -> Dict:
+    """Apply soft edges effect to a picture shape."""
+    # Use the specified presentation or the current one
+    pres_id = presentation_id if presentation_id is not None else current_presentation_id
+    
+    if pres_id is None or pres_id not in presentations:
+        return {
+            "error": "No presentation is currently loaded or the specified ID is invalid"
+        }
+    
+    pres = presentations[pres_id]
+    
+    # Validate slide index
+    if slide_index < 0 or slide_index >= len(pres.slides):
+        return {
+            "error": f"Invalid slide index: {slide_index}. Available slides: 0-{len(pres.slides) - 1}"
+        }
+    
+    slide = pres.slides[slide_index]
+    
+    # Validate shape index
+    if shape_index < 0 or shape_index >= len(slide.shapes):
+        return {
+            "error": f"Invalid shape index: {shape_index}. Available shapes: 0-{len(slide.shapes) - 1}"
+        }
+    
+    shape = slide.shapes[shape_index]
+    
+    # Check if shape is a picture
+    if not hasattr(shape, 'image') and shape.shape_type.name != 'PICTURE':
+        return {
+            "error": f"Shape at index {shape_index} is not a picture shape"
+        }
+    
+    # Validate parameters
+    valid, error = validate_parameters({
+        'radius': (radius, [(is_non_negative, "must be non-negative")])
+    })
+    
+    if not valid:
+        return {"error": error}
+    
+    try:
+        result = ppt_utils.apply_picture_soft_edges(shape, radius)
+        
+        if result['success']:
+            return {
+                "message": result['message'],
+                "soft_edge_info": result['soft_edge_info'],
+                "slide_index": slide_index,
+                "shape_index": shape_index
+            }
+        else:
+            return {"error": result['message']}
+            
+    except Exception as e:
+        return {"error": f"Failed to apply soft edges effect: {str(e)}"}
+
+@app.tool()
+def apply_picture_rotation(
+    slide_index: int,
+    shape_index: int,
+    rotation: float,
+    presentation_id: Optional[str] = None
+) -> Dict:
+    """Apply rotation to a picture shape."""
+    # Use the specified presentation or the current one
+    pres_id = presentation_id if presentation_id is not None else current_presentation_id
+    
+    if pres_id is None or pres_id not in presentations:
+        return {
+            "error": "No presentation is currently loaded or the specified ID is invalid"
+        }
+    
+    pres = presentations[pres_id]
+    
+    # Validate slide index
+    if slide_index < 0 or slide_index >= len(pres.slides):
+        return {
+            "error": f"Invalid slide index: {slide_index}. Available slides: 0-{len(pres.slides) - 1}"
+        }
+    
+    slide = pres.slides[slide_index]
+    
+    # Validate shape index
+    if shape_index < 0 or shape_index >= len(slide.shapes):
+        return {
+            "error": f"Invalid shape index: {shape_index}. Available shapes: 0-{len(slide.shapes) - 1}"
+        }
+    
+    shape = slide.shapes[shape_index]
+    
+    # Check if shape is a picture
+    if not hasattr(shape, 'image') and shape.shape_type.name != 'PICTURE':
+        return {
+            "error": f"Shape at index {shape_index} is not a picture shape"
+        }
+    
+    try:
+        result = ppt_utils.apply_picture_rotation(shape, rotation)
+        
+        if result['success']:
+            return {
+                "message": result['message'],
+                "rotation_info": result['rotation_info'],
+                "slide_index": slide_index,
+                "shape_index": shape_index
+            }
+        else:
+            return {"error": result['message']}
+            
+    except Exception as e:
+        return {"error": f"Failed to apply rotation: {str(e)}"}
+
+@app.tool()
+def apply_picture_transparency(
+    slide_index: int,
+    shape_index: int,
+    transparency: float,
+    presentation_id: Optional[str] = None
+) -> Dict:
+    """Apply transparency to a picture shape."""
+    # Use the specified presentation or the current one
+    pres_id = presentation_id if presentation_id is not None else current_presentation_id
+    
+    if pres_id is None or pres_id not in presentations:
+        return {
+            "error": "No presentation is currently loaded or the specified ID is invalid"
+        }
+    
+    pres = presentations[pres_id]
+    
+    # Validate slide index
+    if slide_index < 0 or slide_index >= len(pres.slides):
+        return {
+            "error": f"Invalid slide index: {slide_index}. Available slides: 0-{len(pres.slides) - 1}"
+        }
+    
+    slide = pres.slides[slide_index]
+    
+    # Validate shape index
+    if shape_index < 0 or shape_index >= len(slide.shapes):
+        return {
+            "error": f"Invalid shape index: {shape_index}. Available shapes: 0-{len(slide.shapes) - 1}"
+        }
+    
+    shape = slide.shapes[shape_index]
+    
+    # Check if shape is a picture
+    if not hasattr(shape, 'image') and shape.shape_type.name != 'PICTURE':
+        return {
+            "error": f"Shape at index {shape_index} is not a picture shape"
+        }
+    
+    # Validate parameters
+    valid, error = validate_parameters({
+        'transparency': (transparency, [(is_in_range(0, 1), "must be between 0.0 and 1.0")])
+    })
+    
+    if not valid:
+        return {"error": error}
+    
+    try:
+        result = ppt_utils.apply_picture_transparency(shape, transparency)
+        
+        if result['success']:
+            return {
+                "message": result['message'],
+                "transparency_info": result['transparency_info'],
+                "slide_index": slide_index,
+                "shape_index": shape_index
+            }
+        else:
+            return {"error": result['message']}
+            
+    except Exception as e:
+        return {"error": f"Failed to apply transparency: {str(e)}"}
+
+@app.tool()
+def apply_picture_bevel(
+    slide_index: int,
+    shape_index: int,
+    bevel_type: str = 'circle',
+    width: float = 6.0,
+    height: float = 6.0,
+    presentation_id: Optional[str] = None
+) -> Dict:
+    """Apply bevel effect to a picture shape."""
+    # Use the specified presentation or the current one
+    pres_id = presentation_id if presentation_id is not None else current_presentation_id
+    
+    if pres_id is None or pres_id not in presentations:
+        return {
+            "error": "No presentation is currently loaded or the specified ID is invalid"
+        }
+    
+    pres = presentations[pres_id]
+    
+    # Validate slide index
+    if slide_index < 0 or slide_index >= len(pres.slides):
+        return {
+            "error": f"Invalid slide index: {slide_index}. Available slides: 0-{len(pres.slides) - 1}"
+        }
+    
+    slide = pres.slides[slide_index]
+    
+    # Validate shape index
+    if shape_index < 0 or shape_index >= len(slide.shapes):
+        return {
+            "error": f"Invalid shape index: {shape_index}. Available shapes: 0-{len(slide.shapes) - 1}"
+        }
+    
+    shape = slide.shapes[shape_index]
+    
+    # Check if shape is a picture
+    if not hasattr(shape, 'image') and shape.shape_type.name != 'PICTURE':
+        return {
+            "error": f"Shape at index {shape_index} is not a picture shape"
+        }
+    
+    # Validate parameters
+    valid_bevel_types = ['circle', 'square', 'slope', 'riblet']
+    valid, error = validate_parameters({
+        'bevel_type': (bevel_type, [(is_in_list(valid_bevel_types), f"must be one of {valid_bevel_types}")]),
+        'width': (width, [(is_positive, "must be positive")]),
+        'height': (height, [(is_positive, "must be positive")])
+    })
+    
+    if not valid:
+        return {"error": error}
+    
+    try:
+        result = ppt_utils.apply_picture_bevel(shape, bevel_type, width, height)
+        
+        if result['success']:
+            return {
+                "message": result['message'],
+                "bevel_info": result['bevel_info'],
+                "slide_index": slide_index,
+                "shape_index": shape_index
+            }
+        else:
+            return {"error": result['message']}
+            
+    except Exception as e:
+        return {"error": f"Failed to apply bevel effect: {str(e)}"}
+
+@app.tool()
+def apply_picture_filter(
+    slide_index: int,
+    shape_index: int,
+    filter_type: str = 'none',
+    intensity: float = 0.5,
+    presentation_id: Optional[str] = None
+) -> Dict:
+    """Apply color filter effect to a picture shape."""
+    # Use the specified presentation or the current one
+    pres_id = presentation_id if presentation_id is not None else current_presentation_id
+    
+    if pres_id is None or pres_id not in presentations:
+        return {
+            "error": "No presentation is currently loaded or the specified ID is invalid"
+        }
+    
+    pres = presentations[pres_id]
+    
+    # Validate slide index
+    if slide_index < 0 or slide_index >= len(pres.slides):
+        return {
+            "error": f"Invalid slide index: {slide_index}. Available slides: 0-{len(pres.slides) - 1}"
+        }
+    
+    slide = pres.slides[slide_index]
+    
+    # Validate shape index
+    if shape_index < 0 or shape_index >= len(slide.shapes):
+        return {
+            "error": f"Invalid shape index: {shape_index}. Available shapes: 0-{len(slide.shapes) - 1}"
+        }
+    
+    shape = slide.shapes[shape_index]
+    
+    # Check if shape is a picture
+    if not hasattr(shape, 'image') and shape.shape_type.name != 'PICTURE':
+        return {
+            "error": f"Shape at index {shape_index} is not a picture shape"
+        }
+    
+    # Validate parameters
+    valid_filter_types = ['grayscale', 'sepia', 'washout', 'none']
+    valid, error = validate_parameters({
+        'filter_type': (filter_type, [(is_in_list(valid_filter_types), f"must be one of {valid_filter_types}")]),
+        'intensity': (intensity, [(is_in_range(0, 1), "must be between 0.0 and 1.0")])
+    })
+    
+    if not valid:
+        return {"error": error}
+    
+    try:
+        result = ppt_utils.apply_picture_filter(shape, filter_type, intensity)
+        
+        if result['success']:
+            return {
+                "message": result['message'],
+                "filter_info": result['filter_info'],
+                "slide_index": slide_index,
+                "shape_index": shape_index
+            }
+        else:
+            return {"error": result['message']}
+            
+    except Exception as e:
+        return {"error": f"Failed to apply filter: {str(e)}"}
+
+@app.tool()
+def apply_combined_picture_effects(
+    slide_index: int,
+    shape_index: int,
+    effects: Dict[str, Dict],
+    presentation_id: Optional[str] = None
+) -> Dict:
+    """Apply multiple picture effects in combination."""
+    # Use the specified presentation or the current one
+    pres_id = presentation_id if presentation_id is not None else current_presentation_id
+    
+    if pres_id is None or pres_id not in presentations:
+        return {
+            "error": "No presentation is currently loaded or the specified ID is invalid"
+        }
+    
+    pres = presentations[pres_id]
+    
+    # Validate slide index
+    if slide_index < 0 or slide_index >= len(pres.slides):
+        return {
+            "error": f"Invalid slide index: {slide_index}. Available slides: 0-{len(pres.slides) - 1}"
+        }
+    
+    slide = pres.slides[slide_index]
+    
+    # Validate shape index
+    if shape_index < 0 or shape_index >= len(slide.shapes):
+        return {
+            "error": f"Invalid shape index: {shape_index}. Available shapes: 0-{len(slide.shapes) - 1}"
+        }
+    
+    shape = slide.shapes[shape_index]
+    
+    # Check if shape is a picture
+    if not hasattr(shape, 'image') and shape.shape_type.name != 'PICTURE':
+        return {
+            "error": f"Shape at index {shape_index} is not a picture shape"
+        }
+    
+    try:
+        result = ppt_utils.apply_combined_picture_effects(shape, effects)
+        
+        result['slide_index'] = slide_index
+        result['shape_index'] = shape_index
+        
+        return result
+            
+    except Exception as e:
+        return {"error": f"Failed to apply combined effects: {str(e)}"}
 
 # ---- Main Execution ----
 def main(transport: str = "stdio", port: int = 8000):
