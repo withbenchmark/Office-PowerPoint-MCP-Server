@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "office-powerpoint-mcp-server"
-version = "1.0.1"
-description = "MCP Server for PowerPoint manipulation using python-pptx"
+version = "2.0.0"
+description = "MCP Server for PowerPoint manipulation using python-pptx - Consolidated Edition"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
@@ -29,8 +29,14 @@ dependencies = [
 "Bug Tracker" = "https://github.com/GongRzhe/Office-PowerPoint-MCP-Server.git/issues"
 
 [tool.hatch.build.targets.wheel]
-only-include = ["ppt_mcp_server.py", "ppt_utils.py"]
+only-include = ["ppt_mcp_server.py", "tools/", "utils/"]
 sources = ["."]
+
+[tool.hatch.build]
+exclude = [
+  "public/demo.mp4",
+  "public/demo.gif"
+]
 
 [project.scripts]
 ppt_mcp_server = "ppt_mcp_server:main"
