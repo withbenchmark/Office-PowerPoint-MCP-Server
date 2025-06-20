@@ -4,6 +4,14 @@
 
 A streamlined MCP (Model Context Protocol) server for PowerPoint manipulation using python-pptx. **Version 2.0** consolidates functionality into 20 powerful, unified tools while maintaining 100% of the original capabilities. The server features a modular architecture with enhanced parameter handling, intelligent operation selection, and comprehensive error handling.
 
+----
+
+# **Not so ugly anymore with new slide_layout_templates**
+
+<img width="1509" alt="截屏2025-06-20 15 53 45" src="https://github.com/user-attachments/assets/197d82cb-017a-4c00-b969-6e40440ffa36" />
+
+----
+
 ### Example
 
 #### Pormpt
