@@ -14,7 +14,8 @@ from tools import (
     register_content_tools,
     register_structural_tools,
     register_professional_tools,
-    register_template_tools
+    register_template_tools,
+    register_enhanced_template_tools
 )
 
 # Initialize the FastMCP server
@@ -266,6 +267,12 @@ register_template_tools(
     get_current_presentation_id
 )
 
+register_enhanced_template_tools(
+    app,
+    presentations,
+    get_current_presentation_id
+)
+
 # ---- Additional Utility Tools ----
 
 @app.tool()
@@ -308,7 +315,7 @@ def get_server_info() -> Dict:
     return {
         "name": "PowerPoint MCP Server - Consolidated Edition",
         "version": "2.0.0",
-        "total_tools": 26,  # Consolidated from 42, added 6 template tools
+        "total_tools": 32,  # Consolidated from 42, added 12 template tools
         "loaded_presentations": len(presentations),
         "current_presentation": current_presentation_id,
         "features": [
@@ -316,17 +323,21 @@ def get_server_info() -> Dict:
             "Content Management (6 tools)", 
             "Structural Elements (4 tools)",
             "Professional Design (3 tools)",
-            "Template System (6 tools)"
+            "Template System (6 tools)",
+            "Enhanced Templates (6 tools)"
         ],
         "improvements": [
-            "Consolidated 42 tools into 26 powerful tools",
+            "Consolidated 42 tools into 32 powerful tools",
             "Organized code into multiple modules",
             "Enhanced parameter handling",
             "Unified operation interfaces",
             "Better error handling and validation",
-            "Comprehensive slide template system with 17 layouts",
+            "Comprehensive slide template system with 20+ layouts",
             "Professional color schemes and typography",
-            "Automated presentation generation"
+            "Automated presentation generation",
+            "Dynamic text sizing and intelligent wrapping",
+            "Advanced visual effects and styling",
+            "Content-aware optimization"
         ]
     }
 
