@@ -1,9 +1,10 @@
 {
   "metadata": {
-    "version": "4.0",
-    "description": "Unified comprehensive slide layout templates with enhanced dynamic features",
+    "version": "4.1",
+    "description": "Unified comprehensive slide layout templates with enhanced dynamic features and modern 2024 design trends",
     "created_date": "2025-01-20",
-    "total_templates": 25,
+    "updated_date": "2025-06-20",
+    "total_templates": 31,
     "supported_features": [
       "Dynamic text sizing and wrapping",
       "Multiple font combinations per template",
@@ -24,7 +25,19 @@
       "Shape elements",
       "Professional color schemes",
       "Typography styles",
-      "Layout positioning"
+      "Layout positioning",
+      "Custom image masks (circle, hexagon)",
+      "Interactive poll elements",
+      "Organic shape design",
+      "Neon cyberpunk styling",
+      "Nature-inspired themes",
+      "Minimalist clean aesthetics",
+      "Pastel color schemes",
+      "Brutalist bold typography",
+      "Split-screen comparisons",
+      "Product showcase layouts",
+      "Real-time visualization",
+      "Modern gradient effects"
     ]
   },
   "color_schemes": {
@@ -67,6 +80,46 @@
       "text": [44, 62, 80],
       "gradient_start": [241, 196, 15],
       "gradient_end": [192, 80, 77]
+    },
+    "pastel_dream": {
+      "primary": [156, 136, 255],
+      "secondary": [255, 154, 162],
+      "accent1": [255, 206, 147],
+      "accent2": [163, 228, 215],
+      "light": [248, 248, 255],
+      "text": [88, 88, 88],
+      "gradient_start": [255, 206, 147],
+      "gradient_end": [156, 136, 255]
+    },
+    "nature_earth": {
+      "primary": [101, 123, 131],
+      "secondary": [162, 132, 94],
+      "accent1": [218, 215, 205],
+      "accent2": [143, 151, 121],
+      "light": [245, 243, 238],
+      "text": [68, 68, 68],
+      "gradient_start": [218, 215, 205],
+      "gradient_end": [101, 123, 131]
+    },
+    "neon_vibrant": {
+      "primary": [255, 20, 147],
+      "secondary": [0, 191, 255],
+      "accent1": [57, 255, 20],
+      "accent2": [255, 140, 0],
+      "light": [248, 248, 248],
+      "text": [34, 34, 34],
+      "gradient_start": [255, 20, 147],
+      "gradient_end": [0, 191, 255]
+    },
+    "minimalist_mono": {
+      "primary": [34, 34, 34],
+      "secondary": [128, 128, 128],
+      "accent1": [68, 68, 68],
+      "accent2": [187, 187, 187],
+      "light": [250, 250, 250],
+      "text": [51, 51, 51],
+      "gradient_start": [187, 187, 187],
+      "gradient_end": [68, 68, 68]
     }
   },
   "typography_styles": {
@@ -87,6 +140,18 @@
       "subtitle": {"name": "Helvetica", "weight": "light", "style": "normal"},
       "body": {"name": "Arial", "weight": "normal", "style": "normal"},
       "accent": {"name": "Helvetica", "weight": "bold", "style": "normal"}
+    },
+    "organic_flow": {
+      "title": {"name": "Montserrat", "weight": "bold", "style": "normal"},
+      "subtitle": {"name": "Open Sans", "weight": "light", "style": "normal"},
+      "body": {"name": "Source Sans Pro", "weight": "normal", "style": "normal"},
+      "accent": {"name": "Montserrat", "weight": "semibold", "style": "normal"}
+    },
+    "brutalist_bold": {
+      "title": {"name": "Impact", "weight": "bold", "style": "normal"},
+      "subtitle": {"name": "Arial Black", "weight": "normal", "style": "normal"},
+      "body": {"name": "Helvetica", "weight": "normal", "style": "normal"},
+      "accent": {"name": "Impact", "weight": "normal", "style": "normal"}
     }
   },
   "typography": {
@@ -192,6 +257,48 @@
         "size": 0.3,
         "transparency": 0.4
       }
+    },
+    "custom_mask_circle": {
+      "mask_type": "circle",
+      "border_radius": "50%",
+      "shadow": {
+        "blur_radius": 12.0,
+        "distance": 6.0,
+        "color": [0, 0, 0],
+        "transparency": 0.25
+      }
+    },
+    "custom_mask_hexagon": {
+      "mask_type": "polygon",
+      "polygon_points": 6,
+      "glow": {
+        "size": 8.0,
+        "color_role": "accent1",
+        "transparency": 0.3
+      }
+    },
+    "neon_outline": {
+      "border": {
+        "width": 4.0,
+        "color_role": "accent1"
+      },
+      "glow": {
+        "size": 10.0,
+        "color_role": "accent1",
+        "transparency": 0.6
+      },
+      "double_exposure": true
+    },
+    "organic_blend": {
+      "blend_mode": "multiply",
+      "organic_mask": true,
+      "soft_edges": {
+        "radius": 8.0
+      },
+      "color_overlay": {
+        "color_role": "accent2",
+        "opacity": 0.2
+      }
     }
   },
   "dynamic_sizing": {
@@ -261,6 +368,26 @@
       "text_effects": ["outline_thin", "shadow_soft"],
       "image_effects": ["elegant_frame"],
       "shape_effects": ["shadow_soft"]
+    },
+    "neon_cyberpunk": {
+      "text_effects": ["glow_vibrant", "outline_thick"],
+      "image_effects": ["neon_outline"],
+      "shape_effects": ["glow_vibrant", "shadow_strong"]
+    },
+    "organic_nature": {
+      "text_effects": ["shadow_soft"],
+      "image_effects": ["organic_blend"],
+      "shape_effects": ["shadow_soft", "glow_subtle"]
+    },
+    "minimalist_clean": {
+      "text_effects": ["outline_thin"],
+      "image_effects": ["custom_mask_circle"],
+      "shape_effects": ["shadow_soft"]
+    },
+    "brutalist_bold": {
+      "text_effects": ["shadow_strong", "outline_thick"],
+      "image_effects": ["custom_mask_hexagon"],
+      "shape_effects": ["shadow_strong", "glow_vibrant"]
     }
   },
   "templates": {
@@ -2642,6 +2769,879 @@
           "placeholder_text": "Our experienced team combines technical expertise with creative vision to deliver exceptional results for every project."
         }
       ]
+    },
+    "minimalist_hero": {
+      "name": "Minimalist Hero Slide",
+      "description": "Clean, spacious design with bold typography and minimal elements",
+      "layout_type": "content",
+      "typography_style": "modern_sans",
+      "elements": [
+        {
+          "type": "text",
+          "role": "hero_title",
+          "position": {
+            "left": 1.0,
+            "top": 2.5,
+            "width": 8.0,
+            "height": 2.5
+          },
+          "styling": {
+            "font_type": "title",
+            "font_size": "dynamic",
+            "alignment": "center",
+            "color_role": "primary",
+            "text_effects": ["outline_thin"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "letter_spacing": 1.5,
+            "line_height": 1.2
+          },
+          "placeholder_text": "Less is More",
+          "dynamic_content": {
+            "responsive_sizing": true,
+            "min_font_size": 32,
+            "max_font_size": 72
+          }
+        },
+        {
+          "type": "shape",
+          "role": "accent_line",
+          "shape_type": "rectangle",
+          "position": {
+            "left": 4.0,
+            "top": 5.2,
+            "width": 2.0,
+            "height": 0.05
+          },
+          "styling": {
+            "fill_color_role": "accent1",
+            "no_border": true
+          }
+        }
+      ],
+      "background": {
+        "type": "solid",
+        "color_role": "light",
+        "texture": "paper_subtle"
+      }
+    },
+    "neon_cyberpunk": {
+      "name": "Neon Cyberpunk Slide",
+      "description": "Futuristic design with neon colors and cyber elements",
+      "layout_type": "content",
+      "typography_style": "tech_modern",
+      "elements": [
+        {
+          "type": "text",
+          "role": "cyber_title",
+          "position": {
+            "left": 0.5,
+            "top": 1.0,
+            "width": 9.0,
+            "height": 1.5
+          },
+          "styling": {
+            "font_type": "title",
+            "font_size": "dynamic",
+            "alignment": "center",
+            "color_role": "accent1",
+            "text_effects": ["glow_vibrant", "outline_thick"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "text_transform": "uppercase",
+            "letter_spacing": 2.0
+          },
+          "placeholder_text": "FUTURE TECH",
+          "dynamic_content": {
+            "neon_flicker": true,
+            "animation": "glow_pulse"
+          }
+        },
+        {
+          "type": "shape",
+          "role": "cyber_grid",
+          "shape_type": "rectangle",
+          "position": {
+            "left": 0.0,
+            "top": 0.0,
+            "width": 10.0,
+            "height": 7.5
+          },
+          "styling": {
+            "fill_color": "transparent",
+            "line_color_role": "accent1",
+            "line_width": 1.0,
+            "opacity": 0.3,
+            "pattern": "grid_cyber"
+          }
+        },
+        {
+          "type": "text",
+          "role": "cyber_content",
+          "position": {
+            "left": 1.0,
+            "top": 3.0,
+            "width": 8.0,
+            "height": 3.0
+          },
+          "styling": {
+            "font_type": "body",
+            "font_size": "dynamic",
+            "alignment": "left",
+            "color_role": "light",
+            "text_effects": ["glow_subtle"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "line_spacing": "dynamic"
+          },
+          "placeholder_text": "◇ Neural network integration\n◇ Quantum processing capabilities\n◇ Holographic interface design\n◇ AI-driven optimization",
+          "dynamic_formatting": {
+            "bullet_glow": true,
+            "typewriter_effect": true
+          }
+        }
+      ],
+      "background": {
+        "type": "cyber_gradient",
+        "base_color": [10, 10, 15],
+        "accent_gradient": {
+          "start_color_role": "accent1",
+          "end_color_role": "accent2",
+          "opacity": 0.2,
+          "direction": "diagonal"
+        },
+        "tech_pattern": "circuit_matrix"
+      }
+    },
+    "nature_organic": {
+      "name": "Organic Nature Slide",
+      "description": "Earth-toned design with organic shapes and natural textures",
+      "layout_type": "content",
+      "typography_style": "organic_flow",
+      "elements": [
+        {
+          "type": "text",
+          "role": "nature_title",
+          "position": {
+            "left": 1.0,
+            "top": 1.0,
+            "width": 8.0,
+            "height": 1.2
+          },
+          "styling": {
+            "font_type": "title",
+            "font_size": "dynamic",
+            "alignment": "left",
+            "color_role": "primary",
+            "text_effects": ["shadow_soft"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "organic_curve": true
+          },
+          "placeholder_text": "Sustainable Growth"
+        },
+        {
+          "type": "shape",
+          "role": "organic_blob_1",
+          "shape_type": "organic_blob",
+          "position": {
+            "left": 7.0,
+            "top": 0.5,
+            "width": 2.5,
+            "height": 2.0
+          },
+          "styling": {
+            "fill_gradient": {
+              "start_color_role": "accent1",
+              "end_color_role": "accent2",
+              "direction": "radial"
+            },
+            "opacity": 0.7,
+            "no_border": true
+          }
+        },
+        {
+          "type": "text",
+          "role": "nature_content",
+          "position": {
+            "left": 1.0,
+            "top": 2.5,
+            "width": 5.5,
+            "height": 4.0
+          },
+          "styling": {
+            "font_type": "body",
+            "font_size": "dynamic",
+            "alignment": "left",
+            "color_role": "text",
+            "text_effects": ["shadow_soft"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "line_spacing": "dynamic"
+          },
+          "placeholder_text": "🌱 Renewable energy solutions\n🌍 Carbon-neutral operations\n🌿 Biodegradable materials\n🌊 Water conservation systems"
+        },
+        {
+          "type": "shape",
+          "role": "organic_blob_2",
+          "shape_type": "organic_blob",
+          "position": {
+            "left": 0.2,
+            "top": 5.0,
+            "width": 3.0,
+            "height": 2.0
+          },
+          "styling": {
+            "fill_gradient": {
+              "start_color_role": "accent2",
+              "end_color_role": "primary",
+              "direction": "radial"
+            },
+            "opacity": 0.5,
+            "no_border": true
+          }
+        }
+      ],
+      "background": {
+        "type": "organic_gradient",
+        "base_color_role": "light",
+        "texture": "organic_paper",
+        "overlay_pattern": "leaves_subtle"
+      }
+    },
+    "interactive_poll": {
+      "name": "Interactive Poll Slide",
+      "description": "Engaging poll slide with interactive elements and real-time visualization",
+      "layout_type": "content",
+      "typography_style": "modern_sans",
+      "elements": [
+        {
+          "type": "text",
+          "role": "poll_question",
+          "position": {
+            "left": 0.5,
+            "top": 0.5,
+            "width": 9.0,
+            "height": 1.2
+          },
+          "styling": {
+            "font_type": "title",
+            "font_size": "dynamic",
+            "alignment": "center",
+            "color_role": "primary",
+            "text_effects": ["shadow_soft", "glow_subtle"],
+            "auto_wrap": true,
+            "auto_fit": true
+          },
+          "placeholder_text": "What's your biggest challenge?",
+          "dynamic_content": {
+            "interactive": true,
+            "poll_integration": true
+          }
+        },
+        {
+          "type": "shape",
+          "role": "poll_option_1",
+          "shape_type": "rounded_rectangle",
+          "position": {
+            "left": 1.0,
+            "top": 2.0,
+            "width": 8.0,
+            "height": 0.8
+          },
+          "styling": {
+            "fill_gradient": {
+              "start_color_role": "accent1",
+              "end_color_role": "primary",
+              "direction": "horizontal"
+            },
+            "border_radius": 25,
+            "shadow": "shadow_soft",
+            "interactive": true,
+            "hover_effect": "scale_102"
+          }
+        },
+        {
+          "type": "text",
+          "role": "poll_option_1_text",
+          "position": {
+            "left": 1.2,
+            "top": 2.1,
+            "width": 6.0,
+            "height": 0.6
+          },
+          "styling": {
+            "font_type": "body",
+            "font_size": "dynamic",
+            "alignment": "left",
+            "color": [255, 255, 255],
+            "text_effects": ["shadow_soft"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "bold": true
+          },
+          "placeholder_text": "A) Time Management"
+        },
+        {
+          "type": "text",
+          "role": "poll_option_1_percentage",
+          "position": {
+            "left": 7.5,
+            "top": 2.1,
+            "width": 1.3,
+            "height": 0.6
+          },
+          "styling": {
+            "font_type": "accent",
+            "font_size": "dynamic",
+            "alignment": "right",
+            "color": [255, 255, 255],
+            "text_effects": ["shadow_soft"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "bold": true
+          },
+          "placeholder_text": "45%",
+          "dynamic_content": {
+            "animation": "count_up",
+            "live_update": true
+          }
+        },
+        {
+          "type": "shape",
+          "role": "poll_option_2",
+          "shape_type": "rounded_rectangle",
+          "position": {
+            "left": 1.0,
+            "top": 3.0,
+            "width": 6.0,
+            "height": 0.8
+          },
+          "styling": {
+            "fill_gradient": {
+              "start_color_role": "accent2",
+              "end_color_role": "secondary",
+              "direction": "horizontal"
+            },
+            "border_radius": 25,
+            "shadow": "shadow_soft",
+            "interactive": true,
+            "hover_effect": "scale_102"
+          }
+        },
+        {
+          "type": "text",
+          "role": "poll_option_2_text",
+          "position": {
+            "left": 1.2,
+            "top": 3.1,
+            "width": 4.5,
+            "height": 0.6
+          },
+          "styling": {
+            "font_type": "body",
+            "font_size": "dynamic",
+            "alignment": "left",
+            "color": [255, 255, 255],
+            "text_effects": ["shadow_soft"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "bold": true
+          },
+          "placeholder_text": "B) Budget Constraints"
+        },
+        {
+          "type": "text",
+          "role": "poll_option_2_percentage",
+          "position": {
+            "left": 6.0,
+            "top": 3.1,
+            "width": 1.0,
+            "height": 0.6
+          },
+          "styling": {
+            "font_type": "accent",
+            "font_size": "dynamic",
+            "alignment": "right",
+            "color": [255, 255, 255],
+            "text_effects": ["shadow_soft"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "bold": true
+          },
+          "placeholder_text": "30%",
+          "dynamic_content": {
+            "animation": "count_up",
+            "live_update": true
+          }
+        },
+        {
+          "type": "shape",
+          "role": "poll_option_3",
+          "shape_type": "rounded_rectangle",
+          "position": {
+            "left": 1.0,
+            "top": 4.0,
+            "width": 5.0,
+            "height": 0.8
+          },
+          "styling": {
+            "fill_gradient": {
+              "start_color_role": "primary",
+              "end_color_role": "accent1",
+              "direction": "horizontal"
+            },
+            "border_radius": 25,
+            "shadow": "shadow_soft",
+            "interactive": true,
+            "hover_effect": "scale_102"
+          }
+        },
+        {
+          "type": "text",
+          "role": "poll_option_3_text",
+          "position": {
+            "left": 1.2,
+            "top": 4.1,
+            "width": 3.5,
+            "height": 0.6
+          },
+          "styling": {
+            "font_type": "body",
+            "font_size": "dynamic",
+            "alignment": "left",
+            "color": [255, 255, 255],
+            "text_effects": ["shadow_soft"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "bold": true
+          },
+          "placeholder_text": "C) Team Communication"
+        },
+        {
+          "type": "text",
+          "role": "poll_option_3_percentage",
+          "position": {
+            "left": 5.0,
+            "top": 4.1,
+            "width": 1.0,
+            "height": 0.6
+          },
+          "styling": {
+            "font_type": "accent",
+            "font_size": "dynamic",
+            "alignment": "right",
+            "color": [255, 255, 255],
+            "text_effects": ["shadow_soft"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "bold": true
+          },
+          "placeholder_text": "25%",
+          "dynamic_content": {
+            "animation": "count_up",
+            "live_update": true
+          }
+        },
+        {
+          "type": "text",
+          "role": "poll_instruction",
+          "position": {
+            "left": 1.0,
+            "top": 5.5,
+            "width": 8.0,
+            "height": 1.0
+          },
+          "styling": {
+            "font_type": "body",
+            "font_size": "dynamic",
+            "alignment": "center",
+            "color_role": "text",
+            "text_effects": ["shadow_soft"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "italic": true
+          },
+          "placeholder_text": "🗳️ Vote now using your mobile device or click on an option"
+        }
+      ],
+      "background": {
+        "type": "interactive_gradient",
+        "base_color_role": "light",
+        "pulse_effect": true
+      }
+    },
+    "split_screen_comparison": {
+      "name": "Split Screen Comparison",
+      "description": "Modern split-screen layout for comparing two concepts or solutions",
+      "layout_type": "content",
+      "typography_style": "tech_modern",
+      "elements": [
+        {
+          "type": "text",
+          "role": "main_title",
+          "position": {
+            "left": 0.5,
+            "top": 0.3,
+            "width": 9.0,
+            "height": 0.9
+          },
+          "styling": {
+            "font_type": "title",
+            "font_size": "dynamic",
+            "alignment": "center",
+            "color_role": "primary",
+            "text_effects": ["shadow_soft", "outline_thin"],
+            "auto_wrap": true,
+            "auto_fit": true
+          },
+          "placeholder_text": "Choose Your Path"
+        },
+        {
+          "type": "shape",
+          "role": "left_section_bg",
+          "shape_type": "rectangle",
+          "position": {
+            "left": 0.0,
+            "top": 1.5,
+            "width": 4.9,
+            "height": 6.0
+          },
+          "styling": {
+            "fill_gradient": {
+              "start_color_role": "accent1",
+              "end_color_role": "primary",
+              "direction": "diagonal"
+            },
+            "opacity": 0.9,
+            "no_border": true
+          }
+        },
+        {
+          "type": "shape",
+          "role": "right_section_bg",
+          "shape_type": "rectangle",
+          "position": {
+            "left": 5.1,
+            "top": 1.5,
+            "width": 4.9,
+            "height": 6.0
+          },
+          "styling": {
+            "fill_gradient": {
+              "start_color_role": "accent2",
+              "end_color_role": "secondary",
+              "direction": "diagonal"
+            },
+            "opacity": 0.9,
+            "no_border": true
+          }
+        },
+        {
+          "type": "text",
+          "role": "left_title",
+          "position": {
+            "left": 0.2,
+            "top": 2.0,
+            "width": 4.5,
+            "height": 0.8
+          },
+          "styling": {
+            "font_type": "subtitle",
+            "font_size": "dynamic",
+            "alignment": "center",
+            "color": [255, 255, 255],
+            "text_effects": ["shadow_strong"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "bold": true
+          },
+          "placeholder_text": "TRADITIONAL"
+        },
+        {
+          "type": "text",
+          "role": "right_title",
+          "position": {
+            "left": 5.3,
+            "top": 2.0,
+            "width": 4.5,
+            "height": 0.8
+          },
+          "styling": {
+            "font_type": "subtitle",
+            "font_size": "dynamic",
+            "alignment": "center",
+            "color": [255, 255, 255],
+            "text_effects": ["shadow_strong"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "bold": true
+          },
+          "placeholder_text": "INNOVATIVE"
+        },
+        {
+          "type": "text",
+          "role": "left_content",
+          "position": {
+            "left": 0.3,
+            "top": 3.0,
+            "width": 4.3,
+            "height": 3.5
+          },
+          "styling": {
+            "font_type": "body",
+            "font_size": "dynamic",
+            "alignment": "left",
+            "color": [255, 255, 255],
+            "text_effects": ["shadow_soft"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "line_spacing": "dynamic"
+          },
+          "placeholder_text": "• Manual processes\n• Limited scalability\n• Higher costs\n• Slower execution\n• Traditional methods"
+        },
+        {
+          "type": "text",
+          "role": "right_content",
+          "position": {
+            "left": 5.4,
+            "top": 3.0,
+            "width": 4.3,
+            "height": 3.5
+          },
+          "styling": {
+            "font_type": "body",
+            "font_size": "dynamic",
+            "alignment": "left",
+            "color": [255, 255, 255],
+            "text_effects": ["shadow_soft"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "line_spacing": "dynamic"
+          },
+          "placeholder_text": "• Automated workflows\n• Infinite scalability\n• Cost optimization\n• Rapid deployment\n• AI-powered solutions"
+        },
+        {
+          "type": "shape",
+          "role": "divider_line",
+          "shape_type": "rectangle",
+          "position": {
+            "left": 4.95,
+            "top": 1.5,
+            "width": 0.1,
+            "height": 6.0
+          },
+          "styling": {
+            "fill_color": [255, 255, 255],
+            "opacity": 0.8,
+            "no_border": true
+          }
+        }
+      ],
+      "background": {
+        "type": "split_gradient",
+        "left_gradient": {
+          "start_color_role": "accent1",
+          "end_color_role": "light",
+          "opacity": 0.1
+        },
+        "right_gradient": {
+          "start_color_role": "accent2",
+          "end_color_role": "light",
+          "opacity": 0.1
+        }
+      }
+    },
+    "product_showcase": {
+      "name": "Product Showcase",
+      "description": "Modern product presentation with custom image masks and interactive elements",
+      "layout_type": "content",
+      "typography_style": "modern_sans",
+      "elements": [
+        {
+          "type": "text",
+          "role": "product_title",
+          "position": {
+            "left": 0.5,
+            "top": 0.3,
+            "width": 9.0,
+            "height": 1.0
+          },
+          "styling": {
+            "font_type": "title",
+            "font_size": "dynamic",
+            "alignment": "center",
+            "color_role": "primary",
+            "text_effects": ["shadow_soft", "glow_subtle"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "gradient_text": true,
+            "gradient_colors": ["primary", "accent1"]
+          },
+          "placeholder_text": "Revolutionary Product"
+        },
+        {
+          "type": "image",
+          "role": "hero_product",
+          "position": {
+            "left": 1.0,
+            "top": 1.8,
+            "width": 4.0,
+            "height": 4.0
+          },
+          "styling": {
+            "effects": "custom_mask_hexagon",
+            "hover_effect": "rotate_360",
+            "interactive": true,
+            "zoom_on_click": true
+          },
+          "placeholder_text": "Product Hero Image"
+        },
+        {
+          "type": "text",
+          "role": "product_features",
+          "position": {
+            "left": 5.5,
+            "top": 1.8,
+            "width": 4.0,
+            "height": 2.5
+          },
+          "styling": {
+            "font_type": "body",
+            "font_size": "dynamic",
+            "alignment": "left",
+            "color_role": "text",
+            "text_effects": ["shadow_soft"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "line_spacing": "dynamic"
+          },
+          "placeholder_text": "✨ Cutting-edge technology\n🚀 10x performance boost\n🔒 Enterprise-grade security\n🌐 Global compatibility\n📱 Mobile-first design"
+        },
+        {
+          "type": "shape",
+          "role": "feature_highlight_1",
+          "shape_type": "rounded_rectangle",
+          "position": {
+            "left": 5.5,
+            "top": 4.5,
+            "width": 1.8,
+            "height": 1.2
+          },
+          "styling": {
+            "fill_gradient": {
+              "start_color_role": "accent1",
+              "end_color_role": "primary",
+              "direction": "diagonal"
+            },
+            "border_radius": 15,
+            "shadow": "shadow_soft",
+            "glow": "glow_subtle"
+          }
+        },
+        {
+          "type": "text",
+          "role": "highlight_1_text",
+          "position": {
+            "left": 5.6,
+            "top": 4.8,
+            "width": 1.6,
+            "height": 0.6
+          },
+          "styling": {
+            "font_type": "accent",
+            "font_size": "dynamic",
+            "alignment": "center",
+            "color": [255, 255, 255],
+            "text_effects": ["shadow_soft"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "bold": true
+          },
+          "placeholder_text": "99.9%\nUptime"
+        },
+        {
+          "type": "shape",
+          "role": "feature_highlight_2",
+          "shape_type": "rounded_rectangle",
+          "position": {
+            "left": 7.5,
+            "top": 4.5,
+            "width": 1.8,
+            "height": 1.2
+          },
+          "styling": {
+            "fill_gradient": {
+              "start_color_role": "accent2",
+              "end_color_role": "secondary",
+              "direction": "diagonal"
+            },
+            "border_radius": 15,
+            "shadow": "shadow_soft",
+            "glow": "glow_subtle"
+          }
+        },
+        {
+          "type": "text",
+          "role": "highlight_2_text",
+          "position": {
+            "left": 7.6,
+            "top": 4.8,
+            "width": 1.6,
+            "height": 0.6
+          },
+          "styling": {
+            "font_type": "accent",
+            "font_size": "dynamic",
+            "alignment": "center",
+            "color": [255, 255, 255],
+            "text_effects": ["shadow_soft"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "bold": true
+          },
+          "placeholder_text": "< 1ms\nLatency"
+        },
+        {
+          "type": "text",
+          "role": "cta_button",
+          "position": {
+            "left": 3.0,
+            "top": 6.2,
+            "width": 4.0,
+            "height": 0.8
+          },
+          "styling": {
+            "font_type": "accent",
+            "font_size": "dynamic",
+            "alignment": "center",
+            "color": [255, 255, 255],
+            "text_effects": ["shadow_strong", "glow_vibrant"],
+            "auto_wrap": true,
+            "auto_fit": true,
+            "bold": true,
+            "background_shape": {
+              "type": "rounded_rectangle",
+              "color_role": "accent2",
+              "border_radius": 25,
+              "glow": "glow_vibrant"
+            },
+            "interactive": true,
+            "hover_effect": "scale_105"
+          },
+          "placeholder_text": "Experience the Future →"
+        }
+      ],
+      "background": {
+        "type": "product_gradient",
+        "base_gradient": {
+          "start_color_role": "light",
+          "end_color_role": "accent1",
+          "direction": "radial",
+          "opacity": 0.1
+        },
+        "floating_particles": true
+      }
     }
   },
   "usage_guide": {
