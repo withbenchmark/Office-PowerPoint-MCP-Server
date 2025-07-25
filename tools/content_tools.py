@@ -95,6 +95,107 @@ def register_content_tools(app: FastMCP, presentations: Dict, get_current_presen
             }
 
     @app.tool()
+    def extract_slide_text(slide_index: int, presentation_id: Optional[str] = None) -> Dict:
+        """Extract all text content from a specific slide."""
+        pres_id = presentation_id if presentation_id is not None else get_current_presentation_id()
+        
+        if pres_id is None or pres_id not in presentations:
+            return {
+                "error": "No presentation is currently loaded or the specified ID is invalid"
+            }
+        
+        pres = presentations[pres_id]
+        
+        if slide_index < 0 or slide_index >= len(pres.slides):
+            return {
+                "error": f"Invalid slide index: {slide_index}. Available slides: 0-{len(pres.slides) - 1}"
+            }
+        
+        slide = pres.slides[slide_index]
+        
+        try:
+            result = ppt_utils.extract_slide_text_content(slide)
+            result["slide_index"] = slide_index
+            return result
+        except Exception as e:
+            return {
+                "error": f"Failed to extract slide text: {str(e)}"
+            }
+
+    @app.tool()
+    def extract_presentation_text(presentation_id: Optional[str] = None, include_slide_info: bool = True) -> Dict:
+        """Extract all text content from all slides in the presentation."""
+        pres_id = presentation_id if presentation_id is not None else get_current_presentation_id()
+        
+        if pres_id is None or pres_id not in presentations:
+            return {
+                "error": "No presentation is currently loaded or the specified ID is invalid"
+            }
+        
+        pres = presentations[pres_id]
+        
+        try:
+            slides_text = []
+            total_text_shapes = 0
+            slides_with_tables = 0
+            slides_with_titles = 0
+            all_presentation_text = []
+            
+            for slide_index, slide in enumerate(pres.slides):
+                slide_text_result = ppt_utils.extract_slide_text_content(slide)
+                
+                if slide_text_result["success"]:
+                    slide_data = {
+                        "slide_index": slide_index,
+                        "text_content": slide_text_result["text_content"]
+                    }
+                    
+                    if include_slide_info:
+                        # Add basic slide info
+                        slide_data["layout_name"] = slide.slide_layout.name
+                        slide_data["total_text_shapes"] = slide_text_result["total_text_shapes"]
+                        slide_data["has_title"] = slide_text_result["has_title"]
+                        slide_data["has_tables"] = slide_text_result["has_tables"]
+                    
+                    slides_text.append(slide_data)
+                    
+                    # Accumulate statistics
+                    total_text_shapes += slide_text_result["total_text_shapes"]
+                    if slide_text_result["has_tables"]:
+                        slides_with_tables += 1
+                    if slide_text_result["has_title"]:
+                        slides_with_titles += 1
+                    
+                    # Collect all text for combined output
+                    if slide_text_result["text_content"]["all_text_combined"]:
+                        all_presentation_text.append(f"=== SLIDE {slide_index + 1} ===")
+                        all_presentation_text.append(slide_text_result["text_content"]["all_text_combined"])
+                        all_presentation_text.append("")  # Empty line separator
+                else:
+                    slides_text.append({
+                        "slide_index": slide_index,
+                        "error": slide_text_result.get("error", "Unknown error"),
+                        "text_content": None
+                    })
+            
+            return {
+                "success": True,
+                "presentation_id": pres_id,
+                "total_slides": len(pres.slides),
+                "slides_with_text": len([s for s in slides_text if s.get("text_content") is not None]),
+                "total_text_shapes": total_text_shapes,
+                "slides_with_titles": slides_with_titles,
+                "slides_with_tables": slides_with_tables,
+                "slides_text": slides_text,
+                "all_presentation_text_combined": "\n".join(all_presentation_text)
+            }
+            
+        except Exception as e:
+            return {
+                "error": f"Failed to extract presentation text: {str(e)}"
+            }
+
+    @app.tool()
     def populate_placeholder(
         slide_index: int,
         placeholder_idx: int,

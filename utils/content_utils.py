@@ -471,3 +471,109 @@ def format_chart(chart, has_legend: bool = True, legend_position: str = 'right',
             
     except Exception:
         pass  # Graceful degradation for chart formatting
+
+
+def extract_slide_text_content(slide) -> Dict:
+    """
+    Extract all text content from a slide including placeholders and text shapes.
+    
+    Args:
+        slide: The slide object to extract text from
+        
+    Returns:
+        Dictionary containing all text content organized by source type
+    """
+    try:
+        text_content = {
+            "slide_title": "",
+            "placeholders": [],
+            "text_shapes": [],
+            "table_text": [],
+            "all_text_combined": ""
+        }
+        
+        all_texts = []
+        
+        # Extract title from slide if available
+        if hasattr(slide, 'shapes') and hasattr(slide.shapes, 'title') and slide.shapes.title:
+            try:
+                title_text = slide.shapes.title.text_frame.text.strip()
+                if title_text:
+                    text_content["slide_title"] = title_text
+                    all_texts.append(title_text)
+            except:
+                pass
+        
+        # Extract text from all shapes
+        for i, shape in enumerate(slide.shapes):
+            shape_text_info = {
+                "shape_index": i,
+                "shape_name": shape.name,
+                "shape_type": str(shape.shape_type),
+                "text": ""
+            }
+            
+            try:
+                # Check if shape has text frame
+                if hasattr(shape, 'text_frame') and shape.text_frame:
+                    text = shape.text_frame.text.strip()
+                    if text:
+                        shape_text_info["text"] = text
+                        all_texts.append(text)
+                        
+                        # Categorize by shape type
+                        if hasattr(shape, 'placeholder_format'):
+                            # This is a placeholder
+                            placeholder_info = shape_text_info.copy()
+                            placeholder_info["placeholder_type"] = str(shape.placeholder_format.type)
+                            placeholder_info["placeholder_idx"] = shape.placeholder_format.idx
+                            text_content["placeholders"].append(placeholder_info)
+                        else:
+                            # This is a regular text shape
+                            text_content["text_shapes"].append(shape_text_info)
+                
+                # Extract text from tables
+                elif hasattr(shape, 'table'):
+                    table_texts = []
+                    table = shape.table
+                    for row_idx, row in enumerate(table.rows):
+                        row_texts = []
+                        for col_idx, cell in enumerate(row.cells):
+                            cell_text = cell.text_frame.text.strip()
+                            if cell_text:
+                                row_texts.append(cell_text)
+                                all_texts.append(cell_text)
+                        if row_texts:
+                            table_texts.append({
+                                "row": row_idx,
+                                "cells": row_texts
+                            })
+                    
+                    if table_texts:
+                        text_content["table_text"].append({
+                            "shape_index": i,
+                            "shape_name": shape.name,
+                            "table_content": table_texts
+                        })
+                        
+            except Exception as e:
+                # Skip shapes that can't be processed
+                continue
+        
+        # Combine all text
+        text_content["all_text_combined"] = "\n".join(all_texts)
+        
+        return {
+            "success": True,
+            "text_content": text_content,
+            "total_text_shapes": len(text_content["placeholders"]) + len(text_content["text_shapes"]),
+            "has_title": bool(text_content["slide_title"]),
+            "has_tables": len(text_content["table_text"]) > 0
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Failed to extract text content: {str(e)}",
+            "text_content": None
+        }

@@ -195,7 +195,7 @@ If you have `uvx` installed, you can run the server directly from PyPI without l
 ## 🚀 What's New in v2.0
 
 ### **Comprehensive Tool Suite (32 Tools)**
-- **Complete PowerPoint manipulation** with 32 specialized tools
+- **Complete PowerPoint manipulation** with 34 specialized tools
 - **11 organized modules** covering all aspects of presentation creation
 - **Enhanced parameter handling** with comprehensive validation
 - **Intelligent defaults** and operation-based interfaces
@@ -215,7 +215,7 @@ If you have `uvx` installed, you can run the server directly from PyPI without l
 
 ## Available Tools
 
-The server provides **32 specialized tools** organized into the following categories:
+The server provides **34 specialized tools** organized into the following categories:
 
 ### **Presentation Management (7 tools)**
 1. **create_presentation** - Create new presentations
@@ -226,40 +226,42 @@ The server provides **32 specialized tools** organized into the following catego
 6. **get_template_file_info** - Analyze template files and layouts
 7. **set_core_properties** - Set document properties
 
-### **Content Management (6 tools)**
+### **Content Management (8 tools)**
 8. **add_slide** - Add slides with optional background styling
 9. **get_slide_info** - Get detailed slide information
-10. **populate_placeholder** - Populate placeholders with text
-11. **add_bullet_points** - Add formatted bullet points
-12. **manage_text** - ✨ **Unified text tool** (add/format/validate/format_runs)
-13. **manage_image** - ✨ **Unified image tool** (add/enhance)
+10. **extract_slide_text** - ✨ **NEW** Extract all text content from a specific slide
+11. **extract_presentation_text** - ✨ **NEW** Extract text content from all slides in presentation
+12. **populate_placeholder** - Populate placeholders with text
+13. **add_bullet_points** - Add formatted bullet points
+14. **manage_text** - ✨ **Unified text tool** (add/format/validate/format_runs)
+15. **manage_image** - ✨ **Unified image tool** (add/enhance)
 
 ### **Template Operations (7 tools)**
-14. **list_slide_templates** - Browse available slide layout templates
-15. **apply_slide_template** - Apply structured layout templates to existing slides
-16. **create_slide_from_template** - Create new slides using layout templates
-17. **create_presentation_from_templates** - Create complete presentations from template sequences
-18. **get_template_info** - Get detailed information about specific templates
-19. **auto_generate_presentation** - Automatically generate presentations based on topic
-20. **optimize_slide_text** - Optimize text elements for better readability and fit
+16. **list_slide_templates** - Browse available slide layout templates
+17. **apply_slide_template** - Apply structured layout templates to existing slides
+18. **create_slide_from_template** - Create new slides using layout templates
+19. **create_presentation_from_templates** - Create complete presentations from template sequences
+20. **get_template_info** - Get detailed information about specific templates
+21. **auto_generate_presentation** - Automatically generate presentations based on topic
+22. **optimize_slide_text** - Optimize text elements for better readability and fit
 
 ### **Structural Elements (4 tools)**
-21. **add_table** - Create tables with enhanced formatting
-22. **format_table_cell** - Format individual table cells
-23. **add_shape** - Add shapes with text and formatting options
-24. **add_chart** - Create charts with comprehensive customization
+23. **add_table** - Create tables with enhanced formatting
+24. **format_table_cell** - Format individual table cells
+25. **add_shape** - Add shapes with text and formatting options
+26. **add_chart** - Create charts with comprehensive customization
 
 ### **Professional Design (3 tools)**
-25. **apply_professional_design** - ✨ **Unified design tool** (themes/slides/enhancement)
-26. **apply_picture_effects** - ✨ **Unified effects tool** (9+ effects combined)
-27. **manage_fonts** - ✨ **Unified font tool** (analyze/optimize/recommend)
+27. **apply_professional_design** - ✨ **Unified design tool** (themes/slides/enhancement)
+28. **apply_picture_effects** - ✨ **Unified effects tool** (9+ effects combined)
+29. **manage_fonts** - ✨ **Unified font tool** (analyze/optimize/recommend)
 
 ### **Specialized Features (5 tools)**
-28. **manage_hyperlinks** - Complete hyperlink management (add/remove/list/update)
-29. **manage_slide_masters** - Access and manage slide master properties and layouts
-30. **add_connector** - Add connector lines/arrows between points on slides
-31. **update_chart_data** - Replace existing chart data with new categories and series
-32. **manage_slide_transitions** - Basic slide transition management
+30. **manage_hyperlinks** - Complete hyperlink management (add/remove/list/update)
+31. **manage_slide_masters** - Access and manage slide master properties and layouts
+32. **add_connector** - Add connector lines/arrows between points on slides
+33. **update_chart_data** - Replace existing chart data with new categories and series
+34. **manage_slide_transitions** - Basic slide transition management
 
 ## 🌟 Key Unified Tools
 
@@ -682,6 +684,83 @@ result = use_mcp_tool(
 )
 ```
 
+### Reading Slide Content with New Text Extraction Tools (v2.1)
+
+```python
+# Extract text content from a specific slide - NEW TOOL
+result = use_mcp_tool(
+    server_name="ppt",
+    tool_name="extract_slide_text",
+    arguments={
+        "slide_index": 0,
+        "presentation_id": presentation_id
+    }
+)
+
+# The result includes:
+{
+    "success": True,
+    "slide_index": 0,
+    "text_content": {
+        "slide_title": "Quarterly Business Review",
+        "placeholders": [
+            {
+                "shape_index": 1,
+                "shape_name": "Subtitle Placeholder 2",
+                "text": "Q4 2024 Results",
+                "placeholder_type": "SUBTITLE",
+                "placeholder_idx": 1
+            }
+        ],
+        "text_shapes": [
+            {
+                "shape_index": 3,
+                "shape_name": "TextBox 4",
+                "text": "Revenue increased by 15%"
+            }
+        ],
+        "table_text": [],
+        "all_text_combined": "Quarterly Business Review\nQ4 2024 Results\nRevenue increased by 15%"
+    },
+    "total_text_shapes": 2,
+    "has_title": True,
+    "has_tables": False
+}
+
+# Extract text from all slides in the presentation - NEW TOOL
+result = use_mcp_tool(
+    server_name="ppt",
+    tool_name="extract_presentation_text",
+    arguments={
+        "presentation_id": presentation_id,
+        "include_slide_info": True
+    }
+)
+
+# The result includes comprehensive text extraction:
+{
+    "success": True,
+    "presentation_id": "pres_123",
+    "total_slides": 5,
+    "slides_with_text": 4,
+    "total_text_shapes": 12,
+    "slides_with_titles": 3,
+    "slides_with_tables": 1,
+    "slides_text": [...],  # Detailed per-slide text content
+    "all_presentation_text_combined": "=== SLIDE 1 ===\nTitle Here\nContent here..."
+}
+
+# Extract text without additional slide metadata for cleaner output
+result = use_mcp_tool(
+    server_name="ppt",
+    tool_name="extract_presentation_text",
+    arguments={
+        "presentation_id": presentation_id,
+        "include_slide_info": False
+    }
+)
+```
+
 ## Template Support
 
 ### Working with Templates
@@ -886,6 +965,21 @@ Office-PowerPoint-MCP-Server/
 - **`manage_text`** - Now supports text run formatting with `format_runs` operation
 - **`create_presentation_from_templates`** - Enhanced template sequence processing
 - **`apply_picture_effects`** - Expanded effect combinations and options
+
+## 🔄 What's New in Version 2.1
+
+**Text extraction capabilities added!** Now you can read content from existing presentations:
+
+### **New Text Extraction Tools Added:**
+- **`extract_slide_text`** - Extract all text content from a specific slide including titles, placeholders, text shapes, and tables
+- **`extract_presentation_text`** - Extract text content from all slides in a presentation with comprehensive statistics and combined output
+
+### **Key Features of Text Extraction:**
+- **Complete text coverage** - Extracts from titles, placeholders, text boxes, and table cells
+- **Structured output** - Organized by content type (titles, placeholders, shapes, tables)
+- **Presentation-wide analysis** - Statistics on text distribution across slides
+- **Flexible output options** - Individual slide content or combined presentation text
+- **Error handling** - Graceful handling of slides that cannot be processed
 
 ## License
 
