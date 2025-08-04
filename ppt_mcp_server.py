@@ -24,10 +24,7 @@ from tools import (
 
 # Initialize the FastMCP server
 app = FastMCP(
-    name="ppt-mcp-server",
-    description="MCP Server for PowerPoint manipulation using python-pptx - Consolidated Edition",
-    version="2.0.0", 
-    log_level="INFO"
+    name="ppt-mcp-server"
 )
 
 # Global state to store presentations in memory
