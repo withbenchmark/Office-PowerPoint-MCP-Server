@@ -417,7 +417,11 @@ def main(transport: str = "stdio", port: int = 8000):
             print("Server stopped by user.")
         except Exception as e:
             print(f"Error starting server: {e}")
-
+            
+    elif transport == "sse":
+        # Run the FastMCP server in SSE (Server Side Events) mode
+        app.run(transport='sse')
+        
     else:
         # Run the FastMCP server
         app.run(transport='stdio')
@@ -431,7 +435,7 @@ if __name__ == "__main__":
         "--transport",
         type=str,
         default="stdio",
-        choices=["stdio", "http"],
+        choices=["stdio", "http", "sse"],
         help="Transport method for the MCP server (default: stdio)"
     )
 
