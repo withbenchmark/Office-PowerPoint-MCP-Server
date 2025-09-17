@@ -31,4 +31,4 @@ ENV PORT=8080
 
 # IMPORTANT: start HTTP transport, bind 0.0.0.0 and use $PORT
 # Use shell form so $PORT is expanded
-CMD sh -lc 'python ppt_mcp_server.py --transport http --host 0.0.0.0 --port ${PORT}'
+CMD ["sh", "-c", "python ppt_mcp_server.py --transport http --host 0.0.0.0 --port ${PORT}"]
