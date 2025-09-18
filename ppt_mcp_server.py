@@ -437,7 +437,8 @@ def main(transport: str = "stdio", port: int = 8000, host: str = "127.0.0.1"):
         # Start the FastMCP server with HTTP transport
         try:
             app.settings.host = host
-            app.run(transport="streamable-http", port=port)
+            app.settings.port = port
+            app.run(transport="streamable-http")
         except asyncio.exceptions.CancelledError:
             print("Server stopped by user.")
         except KeyboardInterrupt:
@@ -447,7 +448,7 @@ def main(transport: str = "stdio", port: int = 8000, host: str = "127.0.0.1"):
 
     elif transport == "sse":
         # Run the FastMCP server in SSE (Server Side Events) mode
-        app.run(transport="sse", port=port)
+        app.run(transport="sse")
 
     else:
         # Run the FastMCP server
