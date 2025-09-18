@@ -430,15 +430,13 @@ def get_server_info() -> Dict:
 
 
 # ---- Main Function ----
-def main(transport: str = "stdio", port: int = 8000):
+def main(transport: str = "stdio", port: int = 8000, host: str = "127.0.0.1"):
     if transport == "http":
         import asyncio
 
-        # Set the port for HTTP transport
-        app.settings.port = port
         # Start the FastMCP server with HTTP transport
         try:
-            app.run(transport="streamable-http")
+            app.run(transport="streamable-http", host=host, port=port)
         except asyncio.exceptions.CancelledError:
             print("Server stopped by user.")
         except KeyboardInterrupt:
@@ -448,7 +446,7 @@ def main(transport: str = "stdio", port: int = 8000):
 
     elif transport == "sse":
         # Run the FastMCP server in SSE (Server Side Events) mode
-        app.run(transport="sse")
+        app.run(transport="sse", host=host, port=port)
 
     else:
         # Run the FastMCP server
@@ -477,5 +475,13 @@ if __name__ == "__main__":
         default=8000,
         help="Port to run the MCP server on (default: 8000)",
     )
+
+    parser.add_argument(
+        "--host",
+        type=str,
+        default="127.0.0.1",
+        help="Host to bind the server to (default: 127.0.0.1)",
+    )
+
     args = parser.parse_args()
-    main(args.transport, args.port)
+    main(args.transport, args.port, args.host)

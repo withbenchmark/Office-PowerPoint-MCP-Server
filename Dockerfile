@@ -29,8 +29,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Cloud Run will set PORT; default to 8080 if not set
 ENV PORT=8080
 
-# Set host to bind to all interfaces for Cloud Run
-ENV HOST=0.0.0.0
-
 # IMPORTANT: start HTTP transport, bind 0.0.0.0 and use $PORT
-CMD ["sh", "-c", "python ppt_mcp_server.py --transport http --port ${PORT}"]
+CMD ["sh", "-c", "python ppt_mcp_server.py --transport http --host 0.0.0.0 --port ${PORT}"]
